@@ -12,7 +12,10 @@ class IsotropicMaterial:
         self.k = k
 
     def __getattr__(self, name):
-        return self.__dict__[name]
+        if name == "parameters":
+            return [self.__dict__['n'], self.__dict__['k']]
+        else:
+            return self.__dict__[name]
         
     def __setattr__(self, name, value):
         if name == "parameters":
