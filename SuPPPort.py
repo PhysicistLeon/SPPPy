@@ -43,7 +43,7 @@ def memoize_M(f):
 
 
 # @clock
-@memoize_M
+# @memoize_M
 def M_matrix(k0, kx0, n_1, n_2, h_1, polarisation = 'p'):
     """Interlayer S matrix - ARRAY."""
     # barchiesi - 2012 - Numerical, k0, kx0 = ext_pars
@@ -132,6 +132,7 @@ class Layer:
                 return M_matrix(k0, kx0, 1, self.n(0), 0, polarisation)
         # Anisotropic layer
         elif isinstance(self.n, Anisotropic):
+            print("АНИЗОТРОПНЫЙ СЛОЙ НЕ РАБОТАЕТ С cache=True")
             return
         else:
             print("WARNING FATAL ERROR I DONT RECOGNIZE LAYER TYPE!")
@@ -1049,48 +1050,6 @@ def plot_graph_complex(
 
 
 
-
-
-# def plot_graph_old(x, y, title='Reflection data', dpi=None, tir_ang=None,
-#                label=None, ox_label='ϴ, °', oy_label='R',
-#                fix_oy_limits=True, ylim=[0, 1.05], noise=None):
-#     """Parameters.
-
-#     x : array(float)
-#         x cordinates.
-#     y : array(float)
-#         x cordinates.
-#     name : string
-#         plot name..
-#     """
-#     y=np.array(y)
-
-#     if dpi is None:
-#         fig, ax = plt.subplots()
-#     else:
-#         fig, ax = plt.subplots(dpi=dpi)
-#     ax.grid()
-#     if label is not None:
-#         ax.plot(x, y, label=label)
-#         plt.legend(loc='best')
-#     else:
-#         ax.plot(x, y)
-#     if tir_ang is not None:
-#         plt.axvline(tir_ang, linestyle="--")
-#     plt.title(title)
-#     if fix_oy_limits:
-#         if ylim:
-#             plt.ylim(ylim)
-#     if noise is not None:
-#         noise=np.array(noise)
-#         plt.fill_between(x, y - noise, y+noise,
-#                       color='gray', alpha=0.2)
-        
-#     plt.ylabel(oy_label)
-#     plt.xlabel(ox_label)
-#     plt.show()
-
-
 # def plot_graph_complex(R_array, title='Reflection data', fix_limits=False, dpi=None,):
 #     """Parameters.
 
@@ -1127,57 +1086,6 @@ def plot_graph_complex(
 #     plt.xlabel("Im(R)")
 #     plt.show()
 
-
-# def multiplot_graph(plots, title='Reflection data', dpi=None, tir_ang=None,
-#                     ox_label='ϴ, °', oy_label='R',
-#                     fix_oy_limits=True, ylim=[0, 1.05], noise=None):
-#     """Parameters.
-
-#     plots : array(x, y, name, linestyle)
-#         like in "Plot_Graph".
-#     name : string
-#         plot name.
-#     tir_ang : int, optional
-#         Total internal reflection_data angle. The default is None.
-#     """
-#     if dpi is None:
-#         fig, ax = plt.subplots()
-#     else:
-#         fig, ax = plt.subplots(dpi=dpi)
-#     ax.grid()
-#     for i in plots:
-#         if len(i) == 2:
-#             ax.plot(i[0], i[1])
-#         elif len(plots[0]) == 3:
-#             ax.plot(i[0], i[1], label=i[2])
-#             plt.legend(loc='best')
-#         elif len(plots[0]) == 4:
-#             ax.plot(i[0], i[1], label=i[2], linestyle=i[3])
-#             plt.legend(loc='best')
-#         else:
-#             if _show_SPR_errors:
-#                 print('Not valid array dimension')
-
-    
-#     if tir_ang:
-#         for i in tir_ang:
-#             plt.axvline(i, linestyle="--")
-
-#     if fix_oy_limits:
-#         plt.ylim(ylim)
-    
-#     plt.ylabel(oy_label)
-#     plt.xlabel(ox_label)
-#     plt.title(title)
-
-#     if noise:
-#         x = plots[0][0]
-#         y = plots[0][1]
-#         ы = np.array([noise]*len(x))
-#         plt.fill_between(x, y - ы, y+ы,
-#                       color='gray', alpha=0.2)
-#     plt.savefig(f'{title}.png')
-#     plt.show()
 
 
 def profile_analyzer(theta_range, reflection_data):

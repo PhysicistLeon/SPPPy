@@ -23,7 +23,7 @@ class ExperimentSPR:
 
     def __init__(self, polarisation='p'):
         """Init empty."""
-        self.layers = dict()
+        self.layers = []
         self.k0 = self.k0_asylum = 2.0 * np.pi / self.wavelength
         self.polarisation = polarisation
 
@@ -85,7 +85,7 @@ class ExperimentSPR:
         thickness : float
             layer thickness.
         """
-        self.layers[len(self.layers)] = new_layer
+        self.layers.append(new_layer)
 
     def delete(self, num):
         """Delete one layer.
@@ -95,14 +95,10 @@ class ExperimentSPR:
         num : int
             layer number.
         """
-        if num < 0 or num > len(self.layers)-1:
+        if num < 0 or num >= len(self.layers):
             print("Deleting layer out of bounds!")
             return
-        if num == len(self.layers) - 1:
-            self.layers.pop(num)
-        else:
-            for i in range(num, len(self.layers)-1):
-                self.layers[i] = self.layers.pop(i+1)
+        self.layers.pop(num)
 
     def insert(self, num, new_layer):
         """Insert layer layer
@@ -114,74 +110,192 @@ class ExperimentSPR:
         new_layer : [array]
             [permittivity, thickness]
         """
-        if num < 0 or num > len(self.layers)-1:
-            if len(self.layers)>0:
-                print("Inserting layer out of bounds! Layer add in the end of the list")
+        if num < 0 or num > len(self.layers):
+            print("Inserting layer out of bounds! Layer added at the end of the list")
             self.add(new_layer)
         else:
-            for i in range(0, len(self.layers) - num + 1):
-                self.layers[len(self.layers) - i] = self.layers[len(self.layers) - i - 1]
-            self.layers[num] = new_layer
+            self.layers.insert(num, new_layer)
 
     # -----------------------------------------------------------------------
     # --------------- Profiles calculations ---------------------------------
     # -----------------------------------------------------------------------
 
     # eqs from Stenzel - The Physics of Thin Film Optical Spectra (2016), p 141
-    def R(self, angles=None, wavelenghts=None, angle=None, is_complex=False,
+    def R(self, ang_range=None, wl_range=None, angle=None, is_complex=False,
           spectral_width=0, spectral_resolution=20):
-        """Representation for every R.
-
-        Parameters
-        ----------
-        angles : arary, optional
-            angles range. The default is None.
-        wavelenghts : arary, optional
-            wavelenghts range. The default is None.
-        angle : float, optional
-            angle for r(lambda). The default is None.
-        is_complex : boolean, optional
-            return real or complex. The default is false.
-
-        Returns
-        -------
-        arary
-            array of R.
         """
-        if angle: self.incidence_angle = angle
-        # Ordinary R
+        Вычисляет коэффициент отражения с учётом конечной спектральной ширины источника.
+        
+        Поддерживает два экспериментальных режима:
+          1. Сканирование по углам (ang_range) при фиксированной номинальной длине волны.
+          2. Сканирование по длинам волн (wl_range) при фиксированном угле падения.
+          
+        При spectral_width > 0 каждая точка результата вычисляется как взвешенное
+        усреднение по лоренцианскому спектральному профилю вокруг соответствующей
+        центральной длины волны.
+        """
+        
+        # ───────────────────────────────────────────────────────────────
+        # 1. Быстрый путь: если спектральная ширина нулевая — просто вызываем
+        #    чистую функцию без размытия.
+        # ───────────────────────────────────────────────────────────────
         if spectral_width == 0:
-            if angles is not None:  # -------------- R(theta) -------------
+            return self._R_basic(
+                ang_range=ang_range,
+                wl_range=wl_range,
+                angle=angle,
+                is_complex=is_complex
+            )
+    
+        # ───────────────────────────────────────────────────────────────
+        # 2. Проверка корректности входных данных:
+        #    - нельзя сканировать и по углам, и по длинам волн одновременно,
+        #    - нужно задать хотя бы один из диапазонов.
+        # ───────────────────────────────────────────────────────────────
+        if ang_range is not None and wl_range is not None:
+            raise ValueError("Нельзя одновременно задавать 'ang_range' и 'wl_range'.")
+        if ang_range is None and wl_range is None:
+            raise ValueError("Необходимо задать либо 'ang_range', либо 'wl_range'.")
+    
+        # ───────────────────────────────────────────────────────────────
+        # 3. Если передан фиксированный угол (например, для спектрального сканирования),
+        #    устанавливаем его как текущий угол падения объекта.
+        # ───────────────────────────────────────────────────────────────
+        if angle is not None:
+            self.incidence_angle = angle
+    
+        # ───────────────────────────────────────────────────────────────
+        # 4. Сохраняем исходное состояние объекта (особенно длину волны),
+        #    чтобы временные изменения внутри расчётов не повлияли на внешнее поведение.
+        #    Это важно, потому что мы будем временно менять self.wavelength.
+        # ───────────────────────────────────────────────────────────────
+        original_wavelength = self.wavelength
+        self.save_scheme()  # сохраняет текущее состояние всей оптической схемы
+    
+        # ───────────────────────────────────────────────────────────────
+        # 5. Используем try/finally, чтобы гарантировать восстановление состояния
+        #    даже в случае ошибки (например, исключения в цикле).
+        # ───────────────────────────────────────────────────────────────
+        try:
+    
+            # ───────────────────────────────────────────────────────────
+            # 6. ВНУТРЕННЯЯ ФУНКЦИЯ: вычисляет одно значение R с учётом спектрального размытия.
+            #    Принимает:
+            #      - single_angle: угол падения (одно число),
+            #      - center_wl: центральная длина волны, вокруг которой делается размытие.
+            #    Возвращает:
+            #      - комплексное число (если is_complex=True),
+            #      - или вещественное |R|² (если is_complex=False).
+            # ───────────────────────────────────────────────────────────
+            def _R_with_spectral_blur(single_angle, center_wl):
+                """
+                Вычисляет размытое значение R для одного угла и одной центральной длины волны.
+                Использует лоренцианский профиль и вызывает _R_basic для каждой боковой λ.
+                """
+                # Параметры лоренциана: gamma = FWHM (полная ширина на полувысоте)
+                gamma = spectral_width
+                # Количество точек для интегрирования: 2 * spectral_resolution - 1
+                # (чтобы центральная точка была ровно в середине)
+                n_pts = spectral_resolution * 2 - 1
+                
+                # Диапазон длин волн для усреднения: ±2*gamma охватывает >95% лоренциана
+                wl_min = center_wl - 2 * gamma
+                wl_max = center_wl + 2 * gamma
+                wl_grid = np.linspace(wl_min, wl_max, n_pts)
+                
+                # Вычисляем веса по формуле лоренциана:
+                #   L(λ) = γ / [2π ((λ - λ₀)² + (γ/2)²)]
+                weights = gamma / (2 * np.pi * ((wl_grid - center_wl)**2 + (gamma / 2)**2))
+                weights /= np.sum(weights)  # нормируем, чтобы сумма весов = 1
+    
+                # Инициализируем накопитель результата
                 if is_complex:
-                    return [self.R_deg(theta) for theta in angles]
+                    total = 0j  # комплексный ноль
                 else:
-                    return [np.abs(self.R_deg(theta))**2 for theta in angles]
-            elif wavelenghts is not None:  # ------- R(lambda) ------------
-                if is_complex:
-                    return [self.R_deg(wl=wl) for wl in wavelenghts]
-                else:
-                    return [np.abs(self.R_deg(wl=wl))**2 for wl in wavelenghts]
-            else: print("Parametrs do not defined!")
+                    total = 0.0  # вещественный ноль
+    
+                # Перебираем все длины волн из спектрального окна
+                for wl, w in zip(wl_grid, weights):
+                    # Устанавливаем текущую длину волны для расчёта
+                    self.wavelength = wl
+                    
+                    # Вызываем ЧИСТУЮ функцию _R_basic для одного угла и текущей λ.
+                    # Замечание: _R_basic возвращает массив, даже если один элемент.
+                    if is_complex:
+                        r_val = self._R_basic(
+                            ang_range=[single_angle], 
+                            wl_range=None, 
+                            angle=None, 
+                            is_complex=True
+                        )
+                        total += w * r_val[0]  # r_val[0] — единственное значение
+                    else:
+                        r_val = self._R_basic(
+                            ang_range=[single_angle], 
+                            wl_range=None, 
+                            angle=None, 
+                            is_complex=False
+                        )
+                        total += w * r_val[0]
+    
+                return total
+    
+            # ───────────────────────────────────────────────────────────
+            # 7. ОСНОВНОЙ ЦИКЛ: обрабатываем каждую точку измерения.
+            #    Выбираем режим в зависимости от того, что задано: углы или длины волн.
+            # ───────────────────────────────────────────────────────────
+            if ang_range is not None:
+                # ─── Режим 1: сканирование по углам ─────────────────────
+                # Центральная длина волны — одна и та же для всех углов:
+                # это исходное значение self.wavelength (сохранено в original_wavelength).
+                results = []
+                for theta in ang_range:
+                    # Для каждого угла вычисляем размытое R
+                    r = _R_with_spectral_blur(single_angle=theta, center_wl=original_wavelength)
+                    results.append(r)
+                # Возвращаем массив того же типа, что и вход (complex или float)
+                return np.array(results, dtype=(complex if is_complex else float))
+    
+            elif wl_range is not None:
+                # ─── Режим 2: сканирование по длинам волн ───────────────
+                # Угол фиксирован (либо задан явно через `angle`, либо уже установлен в self).
+                # Для каждой длины волны из wl_range — свой центр размытия.
+                results = []
+                for wl in wl_range:
+                    r = _R_with_spectral_blur(single_angle=self.incidence_angle, center_wl=wl)
+                    results.append(r)
+                return np.array(results, dtype=(complex if is_complex else float))
+    
+        # ───────────────────────────────────────────────────────────────
+        # 8. Восстанавливаем исходное состояние объекта в любом случае
+        #    (даже если произошла ошибка). Это критически важно для стабильности.
+        # ───────────────────────────────────────────────────────────────
+        finally:
+            self.load_scheme()  # восстанавливает всё: длину волны, угол, слои и т.д.
+            
+    def _R_basic(self, ang_range=None, wl_range=None, angle=None, is_complex=False):
+        """
+        Вычисляет коэффициент отражения без учёта спектральной ширины.
+        """
+        if angle is not None:
+            self.incidence_angle = angle
+    
+        if ang_range is not None:
+            if is_complex:
+                return np.array([self.R_deg(theta) for theta in ang_range], dtype=complex)
+            else:
+                return np.array([np.abs(self.R_deg(theta))**2 for theta in ang_range])
+        
+        elif wl_range is not None:
+            if is_complex:
+                return np.array([self.R_deg(wl=wl) for wl in wl_range], dtype=complex)
+            else:
+                return np.array([np.abs(self.R_deg(wl=wl))**2 for wl in wl_range])
+        
+        else:
+            raise ValueError("Задайте либо 'ang_range', либо 'wl_range'.")
 
-        # R with spectral width
-        if angles is not None:
-            spectral_function = lambda x: spectral_width / (2 * np.pi * 
-                           ((self.wavelength - x)**2 + spectral_width**2 / 4))
-            wavelenghts_list = np.linspace(self.wavelength - spectral_width * 2,
-                                     self. wavelength + spectral_width * 2,
-                                      spectral_resolution * 2 - 1)
-            intensities = spectral_function(wavelenghts_list)
-            intensities_sum = sum(intensities)
-            R_collect = np.zeros(len(angles))
-            self.save_scheme()
-            for i in range(len(wavelenghts_list)):
-                self.wavelength = wavelenghts_list[i]
-                R_collect = R_collect + [np.abs(self.R_deg(theta))**2 for theta in angles] \
-                    *(intensities[i]/intensities_sum)
-            self.load_scheme()
-            return R_collect
-
-    def T(self, angles=None, wavelenghts=None, angle=None, is_complex=False):
+    def T(self, angles=None, wavelengths=None, angle=None, is_complex=False):
           # spectral_width=0, spectral_resolution=20 locked params
         """Representation for every R.
 
@@ -189,8 +303,8 @@ class ExperimentSPR:
         ----------
         angles : arary, optional
             angles range. The default is None.
-        wavelenghts : arary, optional
-            wavelenghts range. The default is None.
+        wavelengths : arary, optional
+            wavelengths range. The default is None.
         angle : float, optional
             angle for r(lambda). The default is None.
         is_complex : boolean, optional
@@ -216,12 +330,12 @@ class ExperimentSPR:
                 return a
 
         # ------- R(lambda) ------------
-        elif wavelenghts is not None:  
-            if is_complex: return [self.T_deg(wl=wl) for wl in wavelenghts]
+        elif wavelengths is not None:  
+            if is_complex: return [self.T_deg(wl=wl) for wl in wavelengths]
             else:
                 sinus = np.sin(np.pi*self.incidence_angle/180)
                 a = []
-                for wl in wavelenghts:
+                for wl in wavelengths:
                     n_0, n_N = self.n[0], self.n[-1]
                     kkk = 2*np.pi/wl
                     kx0 = kkk * sinus * n_0
@@ -410,7 +524,8 @@ class ExperimentSPR:
         gradient_found = False
         complex_found = False
         # print(self.layers)
-        for key, value in self.layers.items():
+        for i, value in enumerate(self.layers):
+            key = i  # если нужен ключ, используем индекс
             if isinstance(value.n, FunctionType):
                 # if found first
                 if not gradient_found:
@@ -457,7 +572,8 @@ class ExperimentSPR:
             # init
             n_range = np.linspace(0, 1, 200)
             # fearch for imaginary
-            for key, value in self.layers.items():
+            for i, value in enumerate(self.layers):
+                key = i
                 if isinstance(value.n, FunctionType):
                     complex_found = False
                     nnn = value.n(n_range)
@@ -635,14 +751,14 @@ class ExperimentSPR:
         x1, y1 = [0, 10, 0], [0, 10, 0]
         x2, y2 = [10, 20, 0], [10, 0, 0]
         shift=0
-        for a in self.layers.items():
+        for i, layer in enumerate(self.layers):
             ax.plot(x1, y1, x2, y2, color='black')
             x1, y1 = [0, 0, 0], [0 - shift, -5 - shift, 0 - shift]
             x2, y2 = [0, 20, 20], [-5 - shift, -5 - shift, 0 - shift]
             shift += 5
     
         text_cords = (5, 2.)
-        for a in self.layers.values():
+        for layer in self.layers:
             plt.text(text_cords[0], text_cords[1], a)
             text_cords = (text_cords[0], text_cords[1]-5)
         
