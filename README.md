@@ -1,2 +1,150 @@
-# SPPPy
-Surface plasmon polariton on Python. This library calculates surface plasmon resonance for sensors, imaging, microscopy, spectoscopy and other research purposes.
+# SPPPy — Surface Plasmon Polariton Python Library
+
+Python-библиотека для моделирования поверхностного плазмонного резонанса (SPR). Используется для расчёта коэффициентов отражения и пропускания многослойных оптических структур.
+
+## Возможности
+
+- Расчёт коэффициента отражения R(θ) — зависимость от угла падения
+- Расчёт коэффициента отражения R(λ) — спектральная зависимость
+- Поддержка градиентных слоёв с переменным показателем преломления
+- Модели дисперсии: Коши, Лорентц-Друде
+- Анизотропные слои
+- Встроенная база оптических констант материалов
+- GUI-приложение для визуализации кривых отражения
+
+## Установка
+
+```bash
+pip install -r requirements.txt
+```
+
+Клонируйте репозиторий и используйте:
+
+```python
+import SPPPy
+```
+
+## Быстрый пример
+
+```python
+from SPPPy import ExperimentSPR, Layer, nm
+
+# Создание эксперимента
+exp = ExperimentSPR(polarization='p')
+exp.wavelength = 632.8 * nm  # длина волны (HeNe лазер)
+
+# Добавление слоёв: (показатель преломления, толщина, название)
+exp.add(Layer(1.0, 0, "Air"))          # полубесконечный слой сверху
+exp.add(Layer(1.52, 1000 * nm, "Glass")) # стеклянная подложка
+exp.add(Layer(0.18 + 3.5j, 50 * nm, "Gold")) # золотой слой
+exp.add(Layer(1.33, 0, "Sample"))       # полубесконечный слой снизу
+
+# Расчёт отражения
+angles = [30, 40, 50, 60, 70, 80]  # углы в градусах
+R = exp.R(angle_range=angles)
+
+print(f"Угол(°)\tR")
+for a, r in zip(angles, R):
+    print(f"{a}\t{r:.4f}")
+```
+
+## Структура проекта
+
+```
+SPPPy2026/
+├── SPPPy/                    # Библиотека
+│   ├── __init__.py           # Экспорт модулей
+│   ├── experiment.py         # Класс ExperimentSPR
+│   └── materials.py          # Слои, дисперсия, матрицы
+├── gui/                      # GUI-приложение
+│   ├── layer.py              # Редактор параметров слоёв
+│   ├── layers_panel.py       # Панель управления слоями
+│   ├── plots.py              # Вкладки с графиками
+│   ├── dialogs.py            # Диалоговые окна
+│   └── precision_input.py   # Виджет ввода чисел
+├── app.py                    # Главное окно приложения
+├── requirements.txt          # Зависимости
+└── PermittivitiesBase.csv    # База оптических констант
+```
+
+## Описание модулей
+
+### SPPPy/experiment.py
+
+**Класс `ExperimentSPR`** — основной класс для численного расчёта SPR-экспериментов.
+
+Основные атрибуты:
+- `layers` — список слоёв структуры
+- `wavelength` — длина волны излучения (в метрах)
+- `incidence_angle` — угол падения (в радианах)
+- `polarization` — поляризация ('p' или 's')
+- `gradient_resolution` — разрешение для градиентных слоёв
+
+Основные методы:
+```python
+exp.add(layer)           # Добавить слой
+exp.delete(num)          # Удалить слой по индексу
+exp.R(angle_range, wl_range, angle)  # Рассчитать отражение
+exp.T(angle_range, wl_range, angle)  # Рассчитать пропускание
+exp.save_scheme()        # Сохранить текущую схему
+exp.load_scheme()        # Загрузить сохранённую схему
+```
+
+### SPPPy/materials.py
+
+**Класс `Layer`** — контейнер для параметров оптического слоя.
+
+```python
+Layer(n, thickness, name=None)
+```
+
+Параметры:
+- `n` — показатель преломления (число, дисперсия или функция)
+- ` thickness` — толщина слоя (в метрах)
+- `name` — название слоя (опционально)
+
+**Класс `DispersionABS`** (абстрактный) — базовый класс для моделей дисперсии.
+
+**Класс `CauchyDispersion`** — модель Коши для диэлектриков:
+```python
+cauchy = CauchyDispersion(A=1.5, B=0.005)  # n(λ) = A + B/λ²
+```
+
+**Класс `LorentzDrudeDispersion`** — модель Лорентц-Друде для металлов:
+```python
+ld = LorentzDrudeDispersion(ωp=9.0, Γ=0.07, f=...)
+```
+
+**Класс `MaterialDispersion`** — дисперсия из базы данных:
+```python
+gold = MaterialDispersion("Au")  # Золото из базы
+```
+
+**Класс `Anisotropic`** — анизотропный слой с разными показателями по осям.
+
+**Функция `M_matrix`** — расчёт матрицы переноса между слоями.
+
+### GUI-приложение
+
+Запуск GUI:
+```bash
+python app.py
+```
+
+Возможности GUI:
+- Визуализация кривых отражения R(θ), R(λ)
+- Редактирование параметров слоёв
+- Сохранение и загрузка схем
+- Просмотр профиля градиентных слоёв
+
+## Зависимости
+
+См. файл [requirements.txt](requirements.txt)
+
+## Лицензия
+
+MIT License
+
+## Авторы
+
+Библиотека разработана для расчёта SPR-экспериментов в оптических системах.

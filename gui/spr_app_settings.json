@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "plots": {
+    "autodraw": true,
+    "limits": {
+      "enabled": true,
+      "real": {
+        "ymin": 0.0,
+        "ymax": 1.05
+      },
+      "complex": {
+        "xmin": -1.05,
+        "xmax": 1.05,
+        "ymin": 0.0,
+        "ymax": 1.05
+      }
+    },
+    "resolution": {
+      "re_theta": 400,
+      "im_theta": 1000,
+      "re_lambda": 400,
+      "im_lambda": 1000
+    }
+  }
+}
