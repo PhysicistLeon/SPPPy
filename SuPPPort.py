@@ -617,7 +617,7 @@ class MaterialDispersion(DispersionABS):
         super().__init__(name=material)
         
         if base_file is None:
-            self.base_file = "SPPPy/PermittivitiesBase.csv"
+            self.base_file = "PermittivitiesBase.csv"
         else:
             self.base_file = base_file
     
