@@ -15,7 +15,7 @@ Python-библиотека для моделирования поверхнос
 ## Установка
 
 ```bash
-pip install numpy scipy matplotlib pandas PyQt5
+pip install -r requirements.txt
 ```
 
 Клонируйте репозиторий и используйте:
@@ -57,13 +57,14 @@ SPPPy2026/
 │   ├── experiment.py         # Класс ExperimentSPR
 │   └── materials.py          # Слои, дисперсия, матрицы
 ├── gui/                      # GUI-приложение
-│   ├── layer_editor.py       # Редактор параметров слоёв
+│   ├── layer.py              # Редактор параметров слоёв
 │   ├── layers_panel.py       # Панель управления слоями
-│   ├── plots.py             # Вкладки с графиками
-│   ├── dialogs.py           # Диалоговые окна
-│   └── precision_input.py  # Виджет ввода чисел
-├── app.py                   # Главное окно приложения
-└── PermittivitiesBase.csv   # База оптических констант
+│   ├── plots.py              # Вкладки с графиками
+│   ├── dialogs.py            # Диалоговые окна
+│   └── precision_input.py   # Виджет ввода чисел
+├── app.py                    # Главное окно приложения
+├── requirements.txt          # Зависимости
+└── PermittivitiesBase.csv    # База оптических констант
 ```
 
 ## Описание модулей
@@ -138,11 +139,7 @@ python app.py
 
 ## Зависимости
 
-- numpy
-- scipy
-- matplotlib
-- pandas
-- PyQt5
+См. файл [requirements.txt](requirements.txt)
 
 ## Лицензия
 
