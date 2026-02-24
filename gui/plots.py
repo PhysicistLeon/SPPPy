@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-p_reflection_curves_app/plots.py
+gui/plots.py
 
 Левая часть приложения: вкладки с отрисовками.
 
@@ -46,7 +46,7 @@ from PyQt5.QtWidgets import (
 )
 
 from .layer import ParamField
-from .digit_number import DigitFormat
+from .precision_input import DigitFormat
 
 
 

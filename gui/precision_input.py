@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-p_reflection_curves_app/digit_number.py
+gui/precision_input.py
 
 Общий модуль для "цифрового" ввода:
 - DigitFormat: количество целых/дробных разрядов.

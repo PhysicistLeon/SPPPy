@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-p_reflection_curves.py  (корень проекта)
+app.py  (корень проекта)
 
 Главный файл приложения:
 - Главное окно (QMainWindow)
@@ -37,7 +37,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from p_reflection_curves_app import (
+from gui import (
     LayerState,
     LayerWidget,
     LayersPanel,
@@ -53,7 +53,7 @@ from SPPPy import (
 
 
 LayerBuilder = Callable[[LayerState], Any]  # Any -> чтобы не упираться в типизацию SPPPy
-APP_SETTINGS_PATH = Path("p_reflection_curves_app") / "spr_app_settings.json"
+APP_SETTINGS_PATH = Path("gui") / "spr_app_settings.json"
 
 
 class LayerFactory:

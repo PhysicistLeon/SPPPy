@@ -1,8 +1,8 @@
-# p_reflection_curves_app/__init__.py
+# gui/__init__.py
 from __future__ import annotations
 
 # digits
-from .digit_number import DigitFormat, DigitNumberEdit
+from .precision_input import DigitFormat, DigitNumberEdit
 
 # layer widgets + state
 from .layer import UnitsSpec, ParamField, LayerState, LayerWidget

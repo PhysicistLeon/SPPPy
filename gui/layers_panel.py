@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-p_reflection_curves_app/layers_panel.py
+gui/layers_panel.py
 
 Правая часть (управление слоями):
 - LayerItem: карточка (LayerWidget + x/up/dn)

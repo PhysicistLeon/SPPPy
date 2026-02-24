@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-p_reflection_curves_app/layer.py
+gui/layer.py
 
 "Чистый слой": редакторы параметров и LayerWidget (один слой).
 
@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
 )
 
-from .digit_number import DigitNumberEdit, DigitFormat
+from .precision_input import DigitNumberEdit, DigitFormat
 from SPPPy import MaterialDispersion
 
 # ============================================================
