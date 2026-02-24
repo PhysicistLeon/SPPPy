@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # Physical parameters from the article
 LAMBDA0_NM = 546.1  # nm
 EPS1 = 3.6168 + 0j  # prism
-EPS_AIR = 1.0 + 0j
+EPS_AIR = 1.0
 EPS_AG = -10.9204 + 0.8334j  # silver at 546.1 nm
 
 # Thicknesses from Fig. 15 legend/caption
@@ -28,7 +28,9 @@ def physical_sqrt(z: np.ndarray) -> np.ndarray:
     Works elementwise on complex numpy arrays.
     """
     w = np.sqrt(z.astype(np.complex128))
-    mask_flip = (np.imag(w) < -1e-14) | ((np.abs(np.imag(w)) <= 1e-14) & (np.real(w) < 0))
+    mask_flip = (np.imag(w) < -1e-14) | (
+        (np.abs(np.imag(w)) <= 1e-14) & (np.real(w) < 0)
+    )
     w[mask_flip] = -w[mask_flip]
     return w
 
@@ -87,8 +89,12 @@ def main():
     ax = axes[0]
     for d_nm in OTTO_THICKNESSES_NM:
         R = reflectance_three_medium_p(
-            THETA_DEG, eps1=EPS1, eps2=EPS_AIR, eps3=EPS_AG,
-            d2_nm=d_nm, lambda0_nm=LAMBDA0_NM
+            THETA_DEG,
+            eps1=EPS1,
+            eps2=EPS_AIR,
+            eps3=EPS_AG,
+            d2_nm=d_nm,
+            lambda0_nm=LAMBDA0_NM,
         )
         ax.plot(THETA_DEG, R, label=f"e = {d_nm:g} nm")
 
@@ -111,8 +117,12 @@ def main():
     ax = axes[1]
     for d_nm in KRETSCH_THICKNESSES_NM:
         R = reflectance_three_medium_p(
-            THETA_DEG, eps1=EPS1, eps2=EPS_AG, eps3=EPS_AIR,
-            d2_nm=d_nm, lambda0_nm=LAMBDA0_NM
+            THETA_DEG,
+            eps1=EPS1,
+            eps2=EPS_AG,
+            eps3=EPS_AIR,
+            d2_nm=d_nm,
+            lambda0_nm=LAMBDA0_NM,
         )
         ax.plot(THETA_DEG, R, label=f"e = {d_nm:g} nm")
 
@@ -133,14 +143,22 @@ def main():
     # Optional: print minima for quick sanity-check against the paper
     print("=== Minima (sanity check) ===")
     for d_nm in OTTO_THICKNESSES_NM:
-        R = reflectance_three_medium_p(THETA_DEG, EPS1, EPS_AIR, EPS_AG, d_nm, LAMBDA0_NM)
+        R = reflectance_three_medium_p(
+            THETA_DEG, EPS1, EPS_AIR, EPS_AG, d_nm, LAMBDA0_NM
+        )
         i = np.argmin(R)
-        print(f"Otto         e={d_nm:6.1f} nm : theta_min={THETA_DEG[i]:.4f} deg, Rmin={R[i]:.6g}")
+        print(
+            f"Otto         e={d_nm:6.1f} nm : theta_min={THETA_DEG[i]:.4f} deg, Rmin={R[i]:.6g}"
+        )
 
     for d_nm in KRETSCH_THICKNESSES_NM:
-        R = reflectance_three_medium_p(THETA_DEG, EPS1, EPS_AG, EPS_AIR, d_nm, LAMBDA0_NM)
+        R = reflectance_three_medium_p(
+            THETA_DEG, EPS1, EPS_AG, EPS_AIR, d_nm, LAMBDA0_NM
+        )
         i = np.argmin(R)
-        print(f"Kretschmann  e={d_nm:6.1f} nm : theta_min={THETA_DEG[i]:.4f} deg, Rmin={R[i]:.6g}")
+        print(
+            f"Kretschmann  e={d_nm:6.1f} nm : theta_min={THETA_DEG[i]:.4f} deg, Rmin={R[i]:.6g}"
+        )
 
     plt.show()
     print(f"\nCSV files saved in: {os.path.abspath(out_dir)}")

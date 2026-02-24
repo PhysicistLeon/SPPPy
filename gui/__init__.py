@@ -15,8 +15,11 @@ from .plots import PlotTabsWidget, PlotCanvasQt  # PlotCanvasQt нужен dialo
 
 # dialogs
 from .dialogs import (
-    PlotDisplaySettingsDialog, CRIDialog, show_cri_dialog,
-    GradientProfileDialog, show_gradient_profile_dialog,
+    PlotDisplaySettingsDialog,
+    CRIDialog,
+    show_cri_dialog,
+    GradientProfileDialog,
+    show_gradient_profile_dialog,
 )
 
 __all__ = [
@@ -34,5 +37,4 @@ __all__ = [
     "show_cri_dialog",
     "GradientProfileDialog",
     "show_gradient_profile_dialog",
-    
 ]

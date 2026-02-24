@@ -3,3 +3,7 @@ scipy
 matplotlib
 pandas
 PyQt5
+pytest
+ruff
+pylint
+pre-commit

@@ -30,7 +30,9 @@ def eps_to_n(eps):
 
 def physical_sqrt(z):
     w = np.sqrt(z.astype(np.complex128))
-    mask_flip = (np.imag(w) < -1e-14) | ((np.abs(np.imag(w)) <= 1e-14) & (np.real(w) < 0))
+    mask_flip = (np.imag(w) < -1e-14) | (
+        (np.abs(np.imag(w)) <= 1e-14) & (np.real(w) < 0)
+    )
     w[mask_flip] = -w[mask_flip]
     return w
 
@@ -57,10 +59,12 @@ n_ag = eps_to_n(EPS_AG)
 
 @pytest.mark.parametrize("d_nm", OTTO_THICKNESSES_NM)
 def test_otto_spppy(d_nm):
-    R_ref = reflectance_three_medium_p(THETA_DEG, EPS1, EPS_AIR, EPS_AG, d_nm, LAMBDA0_NM)
+    R_ref = reflectance_three_medium_p(
+        THETA_DEG, EPS1, EPS_AIR, EPS_AG, d_nm, LAMBDA0_NM
+    )
     ref_theta, ref_R = THETA_DEG[np.argmin(R_ref)], np.min(R_ref)
 
-    exp = ExperimentSPR(polarization='p')
+    exp = ExperimentSPR(polarization="p")
     exp.wavelength = LAMBDA0_NM * nm
     exp.add(Layer(n_prism, 0, "Prism"))
     exp.add(Layer(n_air, d_nm * nm, "Air gap"))

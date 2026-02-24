@@ -35,6 +35,7 @@ from SPPPy import MaterialDispersion
 # ParamField (DigitNumberEdit + optional units)
 # ============================================================
 
+
 @dataclass(frozen=True)
 class UnitsSpec:
     units: Dict[str, float]
@@ -54,6 +55,7 @@ class ParamField(QWidget):
       это воспроизводит те же разряды при загрузке.
     - unit_box хранит выбранный множитель (nm/um, x1/x10/...).
     """
+
     valueChanged = pyqtSignal(float)  # emits valueSI()
 
     def __init__(
@@ -91,7 +93,9 @@ class ParamField(QWidget):
             else:
                 self.unit_box.setCurrentIndex(0)
 
-            self.unit_box.currentTextChanged.connect(lambda _t: self.valueChanged.emit(self.valueSI()))
+            self.unit_box.currentTextChanged.connect(
+                lambda _t: self.valueChanged.emit(self.valueSI())
+            )
 
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
@@ -101,7 +105,9 @@ class ParamField(QWidget):
         if self.unit_box is not None:
             row.addWidget(self.unit_box)
 
-        self.edit.valueChanged.connect(lambda _v: self.valueChanged.emit(self.valueSI()))
+        self.edit.valueChanged.connect(
+            lambda _v: self.valueChanged.emit(self.valueSI())
+        )
 
     # --- enable/disable editing (для правила верх/низ) ---
     def setEditingEnabled(self, enabled: bool) -> None:
@@ -137,7 +143,10 @@ class ParamField(QWidget):
         return {
             "scaled": int(self.edit.scaledValue()),
             "unit": self.unit(),
-            "fmt": {"int": int(self._fmt.integer_digits), "dec": int(self._fmt.decimal_digits)},
+            "fmt": {
+                "int": int(self._fmt.integer_digits),
+                "dec": int(self._fmt.decimal_digits),
+            },
         }
 
     def set_ui_state(self, st: Dict[str, Any]) -> None:
@@ -154,6 +163,7 @@ class ParamField(QWidget):
 # ============================================================
 # Layer types (editors)
 # ============================================================
+
 
 @dataclass
 class LayerState:
@@ -177,28 +187,30 @@ class DielectricEditor(LayerTypeEditor):
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
-    
+
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(2)
-    
+
         scale_units = {"x1": 1.0, "x10": 10.0, "x100": 100.0}
-        self.n = ParamField("n =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
-    
+        self.n = ParamField(
+            "n =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
+
         v.addWidget(self.n)
         v.addWidget(self.d)
-    
+
         self.n.valueChanged.connect(lambda _v: self.changed.emit())
         self.d.valueChanged.connect(lambda _v: self.changed.emit())
         self.set_state()
 
-
-
-
-
     def state(self) -> LayerState:
-        return LayerState(self.TYPE_NAME, {"n": self.n.valueSI(), "d": self.d.valueSI()})
+        return LayerState(
+            self.TYPE_NAME, {"n": self.n.valueSI(), "d": self.d.valueSI()}
+        )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
         if st is None:
@@ -219,9 +231,15 @@ class MetalEditor(LayerTypeEditor):
         v.setSpacing(2)
 
         scale_units = {"x1": 1.0, "x10": 10.0, "x100": 100.0}
-        self.n = ParamField("n =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.k = ParamField("k =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
+        self.n = ParamField(
+            "n =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.k = ParamField(
+            "k =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
 
         v.addWidget(self.n)
         v.addWidget(self.k)
@@ -233,7 +251,10 @@ class MetalEditor(LayerTypeEditor):
         self.set_state()
 
     def state(self) -> LayerState:
-        return LayerState(self.TYPE_NAME, {"n": self.n.valueSI(), "k": self.k.valueSI(), "d": self.d.valueSI()})
+        return LayerState(
+            self.TYPE_NAME,
+            {"n": self.n.valueSI(), "k": self.k.valueSI(), "d": self.d.valueSI()},
+        )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
         if st is None:
@@ -249,19 +270,21 @@ class GradientEditor(LayerTypeEditor):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-    
+
         from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QSizePolicy
-    
+
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(2)
-    
+
         # Кнопка: сверху, на всю ширину
         self.btn_profile = QPushButton("Настроить профиль", self)
-        self.btn_profile.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # растягиваем по X [web:132]
+        self.btn_profile.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )  # растягиваем по X [web:132]
         self.btn_profile.setMinimumHeight(22)
         v.addWidget(self.btn_profile)
-    
+
         # Толщина: ниже
         self.d = ParamField(
             "d =",
@@ -270,14 +293,13 @@ class GradientEditor(LayerTypeEditor):
             default_unit="nm",
         )
         v.addWidget(self.d)
-    
+
         # Данные градиента (единственный источник истины)
         self.profile = self._default_profile()
-    
+
         # Сигналы
         self.btn_profile.clicked.connect(self._on_edit_profile)
         self.d.valueChanged.connect(lambda _v=None: self.changed.emit())
-
 
     # -------- profile helpers --------
     def _default_profile(self) -> Dict[str, Any]:
@@ -286,7 +308,9 @@ class GradientEditor(LayerTypeEditor):
         im = [0.0, 0.0, 0.0, 0.0, 0.0]
         return {"mode": "real", "ymax": 2.0, "x": x, "re": re, "im": im}
 
-    def _profile_to_points(self, prof: Dict[str, Any], *, which: str) -> List[Tuple[float, float]]:
+    def _profile_to_points(
+        self, prof: Dict[str, Any], *, which: str
+    ) -> List[Tuple[float, float]]:
         x = prof.get("x", [])
         y = prof.get("im", []) if which == "im" else prof.get("re", [])
         if not (isinstance(x, list) and isinstance(y, list) and len(x) == len(y)):
@@ -311,7 +335,7 @@ class GradientEditor(LayerTypeEditor):
         re = []
         im = []
 
-        for xv, yv in (points_re or []):
+        for xv, yv in points_re or []:
             x.append(float(xv))
             re.append(float(yv))
 
@@ -360,24 +384,24 @@ class GradientEditor(LayerTypeEditor):
         self.profile = dict(prof)
         self.changed.emit()
 
-
     # -------- LayerTypeEditor API --------
     def state(self) -> LayerState:
-        return LayerState(self.TYPE_NAME, {"d": self.d.valueSI(), "profile": dict(self.profile)})
-
+        return LayerState(
+            self.TYPE_NAME, {"d": self.d.valueSI(), "profile": dict(self.profile)}
+        )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
         if st is None:
             st = LayerState(self.TYPE_NAME, {})
-    
+
         self.d.setValueSI(st.params.get("d", 0.0))
-    
+
         prof = st.params.get("profile", None)
         if isinstance(prof, dict):
             self.profile = dict(prof)
         else:
             self.profile = self._default_profile()
-    
+
         self.changed.emit()
 
 
@@ -392,10 +416,26 @@ class AnisotropicEditor(LayerTypeEditor):
         v.setSpacing(2)
 
         scale_units = {"x1": 1.0, "x10": 10.0, "x100": 100.0}
-        self.n0 = ParamField("n0", DigitFormat(4, 3), units=scale_units, default_unit="x1", label_width=24)
-        self.n1 = ParamField("n1", DigitFormat(4, 3), units=scale_units, default_unit="x1", label_width=24)
-        self.theta = ParamField("θ =", DigitFormat(3, 3), units={"deg": 1.0}, default_unit="deg")
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
+        self.n0 = ParamField(
+            "n0",
+            DigitFormat(4, 3),
+            units=scale_units,
+            default_unit="x1",
+            label_width=24,
+        )
+        self.n1 = ParamField(
+            "n1",
+            DigitFormat(4, 3),
+            units=scale_units,
+            default_unit="x1",
+            label_width=24,
+        )
+        self.theta = ParamField(
+            "θ =", DigitFormat(3, 3), units={"deg": 1.0}, default_unit="deg"
+        )
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
 
         v.addWidget(self.n0)
         v.addWidget(self.n1)
@@ -411,7 +451,12 @@ class AnisotropicEditor(LayerTypeEditor):
     def state(self) -> LayerState:
         return LayerState(
             self.TYPE_NAME,
-            {"n0": self.n0.valueSI(), "n1": self.n1.valueSI(), "theta_deg": self.theta.valueSI(), "d": self.d.valueSI()},
+            {
+                "n0": self.n0.valueSI(),
+                "n1": self.n1.valueSI(),
+                "theta_deg": self.theta.valueSI(),
+                "d": self.d.valueSI(),
+            },
         )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
@@ -435,10 +480,18 @@ class CauchyEditor(LayerTypeEditor):
         v.setSpacing(2)
 
         scale_units = {"x1": 1.0, "x10": 10.0, "x100": 100.0}
-        self.A = ParamField("A =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.B = ParamField("B =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.C = ParamField("C =", DigitFormat(4, 3), units=scale_units, default_unit="x1")
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
+        self.A = ParamField(
+            "A =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.B = ParamField(
+            "B =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.C = ParamField(
+            "C =", DigitFormat(4, 3), units=scale_units, default_unit="x1"
+        )
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
 
         v.addWidget(self.A)
         v.addWidget(self.B)
@@ -450,9 +503,15 @@ class CauchyEditor(LayerTypeEditor):
         self.set_state()
 
     def state(self) -> LayerState:
-        return LayerState(self.TYPE_NAME, {
-            "A": self.A.valueSI(), "B": self.B.valueSI(), "C": self.C.valueSI(), "d": self.d.valueSI()
-        })
+        return LayerState(
+            self.TYPE_NAME,
+            {
+                "A": self.A.valueSI(),
+                "B": self.B.valueSI(),
+                "C": self.C.valueSI(),
+                "d": self.d.valueSI(),
+            },
+        )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
         if st is None:
@@ -475,12 +534,36 @@ class LorentzDrudeEditor(LayerTypeEditor):
         v.setSpacing(2)
 
         e15_units = {"e13": 1e13, "e14": 1e14, "e15": 1e15}
-        self.wp = ParamField("ωp =", DigitFormat(3, 2), units=e15_units, default_unit="e15", label_width=32)
-        self.wt = ParamField("γ =",  DigitFormat(3, 2), units=e15_units, default_unit="e15", label_width=32)
-        self.w0 = ParamField("ω0 =", DigitFormat(3, 2), units=e15_units, default_unit="e15", label_width=32)
-        self.ampl = ParamField("A =", DigitFormat(3, 2), units={"x1": 1.0, "x10": 10.0}, default_unit="x1")
-        self.eps_inf = ParamField("ε∞ =", DigitFormat(3, 2), units={"x1": 1.0}, default_unit="x1")
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
+        self.wp = ParamField(
+            "ωp =",
+            DigitFormat(3, 2),
+            units=e15_units,
+            default_unit="e15",
+            label_width=32,
+        )
+        self.wt = ParamField(
+            "γ =",
+            DigitFormat(3, 2),
+            units=e15_units,
+            default_unit="e15",
+            label_width=32,
+        )
+        self.w0 = ParamField(
+            "ω0 =",
+            DigitFormat(3, 2),
+            units=e15_units,
+            default_unit="e15",
+            label_width=32,
+        )
+        self.ampl = ParamField(
+            "A =", DigitFormat(3, 2), units={"x1": 1.0, "x10": 10.0}, default_unit="x1"
+        )
+        self.eps_inf = ParamField(
+            "ε∞ =", DigitFormat(3, 2), units={"x1": 1.0}, default_unit="x1"
+        )
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
 
         v.addWidget(self.wp)
         v.addWidget(self.wt)
@@ -494,10 +577,17 @@ class LorentzDrudeEditor(LayerTypeEditor):
         self.set_state()
 
     def state(self) -> LayerState:
-        return LayerState(self.TYPE_NAME, {
-            "wp": self.wp.valueSI(), "wt": self.wt.valueSI(), "w0": self.w0.valueSI(),
-            "ampl": self.ampl.valueSI(), "eps_inf": self.eps_inf.valueSI(), "d": self.d.valueSI()
-        })
+        return LayerState(
+            self.TYPE_NAME,
+            {
+                "wp": self.wp.valueSI(),
+                "wt": self.wt.valueSI(),
+                "w0": self.w0.valueSI(),
+                "ampl": self.ampl.valueSI(),
+                "eps_inf": self.eps_inf.valueSI(),
+                "d": self.d.valueSI(),
+            },
+        )
 
     def set_state(self, st: Optional[LayerState] = None) -> None:
         if st is None:
@@ -512,7 +602,6 @@ class LorentzDrudeEditor(LayerTypeEditor):
         self.changed.emit()
 
 
-
 class DispersionEditor(LayerTypeEditor):
     TYPE_NAME = "Dispersion"
 
@@ -522,54 +611,59 @@ class DispersionEditor(LayerTypeEditor):
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
-    
+
         self._pending_material_key: Optional[str] = None
-    
+
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(2)
-    
+
         mat_row = QHBoxLayout()
         mat_row.setContentsMargins(0, 0, 0, 0)
         mat_row.setSpacing(4)
-        
+
         lab = QLabel("Mat", self)
-        lab.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)   # минимум, не растягивать
+        lab.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Fixed
+        )  # минимум, не растягивать
         mat_row.addWidget(lab, 0)
-        
+
         self.material = QComboBox(self)
         self.material.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.material.setMinimumWidth(80)  # чтобы не схлопывался в ноль
         mat_row.addWidget(self.material, 10)  # доля остатка
-        
+
         self.btn_cri = QPushButton("CRI", self)
-        self.btn_cri.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # важно: дать право растягиваться
-        self.btn_cri.setMinimumWidth(self.btn_cri.sizeHint().width())         # минимальная адекватная ширина
+        self.btn_cri.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed
+        )  # важно: дать право растягиваться
+        self.btn_cri.setMinimumWidth(
+            self.btn_cri.sizeHint().width()
+        )  # минимальная адекватная ширина
         self.btn_cri.setFixedHeight(22)
         self.btn_cri.clicked.connect(self._on_show_cri)
         mat_row.addWidget(self.btn_cri, 3)  # доля остатка
-        
+
         v.addLayout(mat_row)
 
-    
-        self.d = ParamField("d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm")
+        self.d = ParamField(
+            "d =", DigitFormat(4, 3), units={"nm": 1e-9, "um": 1e-6}, default_unit="nm"
+        )
         v.addWidget(self.d)
-    
+
         self.material.currentTextChanged.connect(lambda _t: self.changed.emit())
         self.d.valueChanged.connect(lambda _v: self.changed.emit())
-    
+
         # загрузить из базы
         self.refresh_materials(force=False, debug=False)
 
-
     def _on_show_cri(self) -> None:
-        from .dialogs import show_cri_dialog  # локально, чтобы не было циклического импорта
-    
+        from .dialogs import (
+            show_cri_dialog,
+        )  # локально, чтобы не было циклического импорта
+
         key = self._key(self.material.currentText()) or "Air"
         show_cri_dialog(key, parent=self)
-
-
-    
 
     def _key(self, txt: str) -> str:
         return str(txt or "").split(",", 1)[0].strip()
@@ -577,10 +671,11 @@ class DispersionEditor(LayerTypeEditor):
     @classmethod
     def _load_items_from_db(cls) -> List[Tuple[str, str]]:
         # Единственный источник правды: MaterialDispersion("").materials_list()
-        
 
-        m = MaterialDispersion("Air")           # “технический слой” без имени, как в твоём примере
-        summary = m.materials_list()         # index=Element, columns: λ_min, λ_max, Source
+        m = MaterialDispersion(
+            "Air"
+        )  # “технический слой” без имени, как в твоём примере
+        summary = m.materials_list()  # index=Element, columns: λ_min, λ_max, Source
 
         items: List[Tuple[str, str]] = []
         if getattr(summary, "empty", True):
@@ -607,7 +702,9 @@ class DispersionEditor(LayerTypeEditor):
         return items
 
     @classmethod
-    def db_items(cls, *, force: bool = False, debug: bool = False) -> List[Tuple[str, str]]:
+    def db_items(
+        cls, *, force: bool = False, debug: bool = False
+    ) -> List[Tuple[str, str]]:
         if force or cls._cached_items is None:
             try:
                 cls._cached_items = cls._load_items_from_db()
@@ -617,7 +714,9 @@ class DispersionEditor(LayerTypeEditor):
                 cls._cached_err = repr(e)
 
             if debug:
-                print(f"[disp] materials_list: n={len(cls._cached_items)} err={cls._cached_err}")
+                print(
+                    f"[disp] materials_list: n={len(cls._cached_items)} err={cls._cached_err}"
+                )
 
         return list(cls._cached_items or [])
 
@@ -630,11 +729,13 @@ class DispersionEditor(LayerTypeEditor):
 
         self.set_material_choices(items, debug=debug)
 
-    def set_material_choices(self, items: List[Tuple[str, str]], *, debug: bool = False) -> None:
+    def set_material_choices(
+        self, items: List[Tuple[str, str]], *, debug: bool = False
+    ) -> None:
         key = self._pending_material_key or self._key(self.material.currentText())
 
         self.material.clear()
-        for name, src in (items or []):
+        for name, src in items or []:
             name = str(name).strip()
             if not name:
                 continue
@@ -653,7 +754,9 @@ class DispersionEditor(LayerTypeEditor):
             self.material.setCurrentIndex(0)
 
         if debug:
-            print(f"[disp] combo count={self.material.count()} current='{self.material.currentText()}'")
+            print(
+                f"[disp] combo count={self.material.count()} current='{self.material.currentText()}'"
+            )
 
     def state(self) -> LayerState:
         key = self._key(self.material.currentText()) or "Air"
@@ -678,7 +781,7 @@ LAYER_TYPE_REGISTRY: Dict[str, Type[LayerTypeEditor]] = {
     MetalEditor.TYPE_NAME: MetalEditor,
     GradientEditor.TYPE_NAME: GradientEditor,
     AnisotropicEditor.TYPE_NAME: AnisotropicEditor,
-    CauchyEditor.TYPE_NAME: CauchyEditor,      # ← ДОБАВИТЬ
+    CauchyEditor.TYPE_NAME: CauchyEditor,  # ← ДОБАВИТЬ
     LorentzDrudeEditor.TYPE_NAME: LorentzDrudeEditor,  # ← ДОБАВИТЬ
     DispersionEditor.TYPE_NAME: DispersionEditor,
 }
@@ -687,6 +790,7 @@ LAYER_TYPE_REGISTRY: Dict[str, Type[LayerTypeEditor]] = {
 # ============================================================
 # LayerWidget (Variant B: all editors exist, only one visible)
 # ============================================================
+
 
 class LayerWidget(QWidget):
     """
@@ -697,12 +801,22 @@ class LayerWidget(QWidget):
     - при смене типа: старый editor hide, новый show
     - высота подстраивается под активный editor
     """
+
     changed = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget] = None, *, allowed_types: Optional[List[str]] = None):
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        *,
+        allowed_types: Optional[List[str]] = None,
+    ):
         super().__init__(parent)
 
-        types = allowed_types if allowed_types is not None else list(LAYER_TYPE_REGISTRY.keys())
+        types = (
+            allowed_types
+            if allowed_types is not None
+            else list(LAYER_TYPE_REGISTRY.keys())
+        )
         if not types:
             raise ValueError("LayerWidget: no layer types available")
 
@@ -742,31 +856,33 @@ class LayerWidget(QWidget):
         self._active_type: Optional[str] = None
         self.type_box.currentTextChanged.connect(self._on_type_changed)
         self._on_type_changed(self.type_box.currentText())
-        
+
         # Синхронизация толщины между редакторами
         self._shared_d_si = 0.0
         self._sync_d_guard = False
-        
+
         for name, ed in self._editors.items():
             d = getattr(ed, "d", None)
             if d is not None:
-                d.valueChanged.connect(lambda checked, src_ed=ed: self._on_d_changed(src_ed))
-        
+                d.valueChanged.connect(
+                    lambda checked, src_ed=ed: self._on_d_changed(src_ed)
+                )
+
         # self.type_box.currentTextChanged.connect(self._on_type_changed)
 
     def _on_d_changed(self, src_editor) -> None:
         """Любой d изменился → синхронизировать все остальные."""
         if self._sync_d_guard:
             return
-        
+
         src_d = getattr(src_editor, "d", None)
         if src_d is None:
             return
-        
+
         new_d_si = float(src_d.valueSI())
         if abs(new_d_si - self._shared_d_si) < 1e-12:  # без изменений
             return
-        
+
         self._sync_d_guard = True
         try:
             self._shared_d_si = new_d_si
@@ -782,20 +898,20 @@ class LayerWidget(QWidget):
                 target_d.blockSignals(False)
         finally:
             self._sync_d_guard = False
-        
+
         self.changed.emit()
-    
+
     def _sync_all_thickness(self) -> None:
         """Принудительно синхронизировать все d по текущему активному."""
         current_type = self.type_box.currentText()
         current_ed = self._editors.get(current_type)
         if current_ed is None:
             return
-        
+
         current_d = getattr(current_ed, "d", None)
         if current_d is None:
             return
-        
+
         self._sync_d_guard = True
         try:
             self._shared_d_si = float(current_d.valueSI())
@@ -812,23 +928,22 @@ class LayerWidget(QWidget):
     def _on_type_changed(self, t: str) -> None:
         if t == self._active_type:
             return
-    
+
         if self._active_type in self._editors:
             self._editors[self._active_type].setVisible(False)
-    
+
         self._editors[t].setVisible(True)
         self._active_type = t
-    
+
         # помогает layout правильно пересчитать высоту
         self._frame_lay.invalidate()
         self.type_frame.updateGeometry()
         self.updateGeometry()
-    
+
         # Синхронизация толщины при переключении типа
         self._sync_all_thickness()
-        
-        self.changed.emit()
 
+        self.changed.emit()
 
     def set_thickness_enabled(self, enabled: bool) -> None:
         """Только enable/disable поля толщины d (без изменения значения)."""
@@ -861,19 +976,21 @@ class LayerWidget(QWidget):
     def get_ui_state(self) -> Dict[str, Any]:
         t = self.type_box.currentText()
         ed = self._editors[t]
-    
-        fields = {name: pf.ui_state() for name, pf in self._editor_paramfields(ed).items()}
-    
+
+        fields = {
+            name: pf.ui_state() for name, pf in self._editor_paramfields(ed).items()
+        }
+
         extra: Dict[str, Any] = {}
         mat = getattr(ed, "material", None)
         if isinstance(mat, QComboBox):
             extra["material"] = str(mat.currentText()).split(",", 1)[0].strip()
-    
+
         # Gradient: только profile
         prof = getattr(ed, "profile", None)
         if isinstance(prof, dict):
             extra["profile"] = dict(prof)
-    
+
         return {"type": t, "fields": fields, "extra": extra}
 
     def set_ui_state(self, st: Dict[str, Any]) -> None:
@@ -882,23 +999,25 @@ class LayerWidget(QWidget):
             self.type_box.setCurrentText(t)
         else:
             t = self.type_box.currentText()
-    
+
         ed = self._editors[t]
-    
+
         # extras
         extra = st.get("extra", {})
         if isinstance(extra, dict):
             mat = getattr(ed, "material", None)
-            if isinstance(mat, QComboBox) and isinstance(extra.get("material", None), str):
+            if isinstance(mat, QComboBox) and isinstance(
+                extra.get("material", None), str
+            ):
                 key = str(extra["material"]).split(",", 1)[0].strip()
                 i = mat.findText(key, Qt.MatchStartsWith)
                 if i >= 0:
                     mat.setCurrentIndex(i)
-    
+
             # Gradient: только profile
             if isinstance(extra.get("profile", None), dict) and hasattr(ed, "profile"):
                 setattr(ed, "profile", dict(extra["profile"]))
-    
+
         # fields
         fields = st.get("fields", {})
         if isinstance(fields, dict):
@@ -906,8 +1025,7 @@ class LayerWidget(QWidget):
             for name, pf_state in fields.items():
                 if name in pf_map and isinstance(pf_state, dict):
                     pf_map[name].set_ui_state(pf_state)
-    
+
         self.changed.emit()
         # Синхронизировать толщину по всем редакторам
         self._sync_all_thickness()
-

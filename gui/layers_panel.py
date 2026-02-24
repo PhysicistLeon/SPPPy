@@ -30,7 +30,6 @@ from PyQt5.QtWidgets import (
 from .layer import LayerWidget, LayerState
 
 
-
 class LayerItem(QFrame):
     """Одна карточка: LayerWidget слева + столбик управления справа (x/up/dn)."""
 
@@ -122,30 +121,28 @@ class LayersListWidget(QWidget):
             it.setParent(None)
             it.deleteLater()
         self._items.clear()
-    
+
         defaults = [
             LayerState("Dielectric", {"n": 1.23, "d": 0.0}),
-            LayerState("Metal",      {"n": 0.05, "k": 4.24, "d": 55e-9}),  # 55 nm
-            LayerState("Dielectric", {"n": 1.0,  "d": 0.0}),
+            LayerState("Metal", {"n": 0.05, "k": 4.24, "d": 55e-9}),  # 55 nm
+            LayerState("Dielectric", {"n": 1.0, "d": 0.0}),
         ]
-    
+
         for st in defaults:
             item = LayerItem(self.inner)
-    
+
             item.btn_del.clicked.connect(lambda _=False, it=item: self.delete_item(it))
             item.btn_up.clicked.connect(lambda _=False, it=item: self.move_up(it))
             item.btn_dn.clicked.connect(lambda _=False, it=item: self.move_down(it))
             item.layer.changed.connect(self._emit_changed)
-    
+
             self.inner_l.insertWidget(self.inner_l.count() - 1, item)
             self._items.append(item)
-    
+
             item.layer.set_state(st)
-    
+
         self._update_boundary_thickness_enabled()
         self._emit_changed()
-
-    
 
     def _update_boundary_thickness_enabled(self) -> None:
         n = len(self._items)
@@ -155,8 +152,6 @@ class LayersListWidget(QWidget):
 
     def _emit_changed(self) -> None:
         self.layersChanged.emit()
-
-    
 
     def add_layer(self) -> None:
         item = LayerItem(self.inner)
@@ -250,6 +245,7 @@ class LayersListWidget(QWidget):
 
         self._update_boundary_thickness_enabled()
         self._emit_changed()
+
 
 class LayersPanel(QFrame):
     """Правая панель: заголовок + список + кнопка 'Добавить слой' (без Save/Load)."""

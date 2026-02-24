@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 from typing import Dict
@@ -13,29 +11,20 @@ from SPPPy import MaterialDispersion
 
 
 import copy
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
-import numpy as np
-from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
     QHBoxLayout,
     QGroupBox,
     QGridLayout,
-    QLabel,
     QCheckBox,
     QDoubleSpinBox,
     QSpinBox,
     QPushButton,
     QMessageBox,
-    QTabWidget,
 )
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
 
-from SPPPy import MaterialDispersion
 from .plots import PlotCanvasQt
 
 from typing import Tuple
@@ -46,6 +35,7 @@ from scipy.interpolate import PchipInterpolator
 _GRAD_PROFILE_WINDOWS: Dict[str, "GradientProfileDialog"] = {}
 
 _CRI_WINDOWS: Dict[str, "CRIDialog"] = {}
+
 
 def show_cri_dialog(material: str, parent=None) -> None:
     key = str(material or "").strip() or "Air"
@@ -79,13 +69,16 @@ class CRIDialog(QDialog):
                 self._poly2 = QPolygonF()
                 self._poly2_i = []
                 self._nearest_poly2_idx = None
-                self._c2 = QColor(40, 140, 40)   # k(λ) зелёный
+                self._c2 = QColor(40, 140, 40)  # k(λ) зелёный
 
-            def set_curves(self, x, y1, y2, *, x_label: str, title: str, ylim=None) -> None:
+            def set_curves(
+                self, x, y1, y2, *, x_label: str, title: str, ylim=None
+            ) -> None:
                 self._y2 = np.asarray(y2, dtype=float)
 
                 self.plot_xy(
-                    x, y1,
+                    x,
+                    y1,
                     x_label=x_label,
                     y_label="n, k",
                     title=title,
@@ -139,7 +132,10 @@ class CRIDialog(QDialog):
                 p.drawPolyline(self._poly2)
 
                 # маркер для k
-                if self._nearest_poly2_idx is not None and 0 <= self._nearest_poly2_idx < self._poly2.size():
+                if (
+                    self._nearest_poly2_idx is not None
+                    and 0 <= self._nearest_poly2_idx < self._poly2.size()
+                ):
                     pt = self._poly2[self._nearest_poly2_idx]
                     p.setPen(QPen(QColor(220, 50, 50), 2))
                     p.setBrush(QColor(220, 50, 50))
@@ -166,7 +162,10 @@ class CRIDialog(QDialog):
                 if pr.width() <= 1 or xr == 0:
                     return
 
-                x_data = float(self._xmin) + (float(ev.pos().x()) - float(pr.left())) / float(pr.width()) * xr
+                x_data = (
+                    float(self._xmin)
+                    + (float(ev.pos().x()) - float(pr.left())) / float(pr.width()) * xr
+                )
                 idx = int(np.argmin(np.abs(xarr - x_data)))
 
                 # маркер n: data_idx -> poly_idx
@@ -179,7 +178,9 @@ class CRIDialog(QDialog):
 
                 # маркер k: data_idx -> poly2_idx
                 try:
-                    self._nearest_poly2_idx = self._poly2_i.index(idx) if self._poly2_i else idx
+                    self._nearest_poly2_idx = (
+                        self._poly2_i.index(idx) if self._poly2_i else idx
+                    )
                 except ValueError:
                     self._nearest_poly2_idx = None
 
@@ -210,7 +211,9 @@ class CRIDialog(QDialog):
             src = ""
 
         # Заголовок окна: материал + диапазон + источник
-        title = f"{self._material} | λ: {self._wl_um.min():.3g}…{self._wl_um.max():.3g} μm"
+        title = (
+            f"{self._material} | λ: {self._wl_um.min():.3g}…{self._wl_um.max():.3g} μm"
+        )
         if src:
             title += f" | {src}"
         self.setWindowTitle(title)
@@ -228,7 +231,9 @@ class CRIDialog(QDialog):
 
         self.canvas = CRICanvas(self)
         self.canvas.set_curves(
-            self._wl_um, self._n, self._k,
+            self._wl_um,
+            self._n,
+            self._k,
             x_label="λ, μm",
             title="n(λ) и k(λ)",
             ylim=ylim,
@@ -257,6 +262,7 @@ class CRIDialog(QDialog):
 # Если у тебя в layer.py вызывается show_cri_dialog(...), оставь этот thin-wrapper:
 _CRI_WINDOWS: Dict[str, CRIDialog] = {}
 
+
 def show_cri_dialog(material: str, parent=None) -> None:
     key = str(material or "").strip() or "Air"
     w = _CRI_WINDOWS.get(key)
@@ -281,9 +287,15 @@ class PlotDisplaySettingsDialog(QDialog):
         self.setWindowTitle("Настройки отображения")
 
         self._out_settings: Optional[Dict[str, Any]] = None
-        self._in_settings = copy.deepcopy(app_settings) if isinstance(app_settings, dict) else {}
+        self._in_settings = (
+            copy.deepcopy(app_settings) if isinstance(app_settings, dict) else {}
+        )
 
-        plots = self._in_settings.get("plots", {}) if isinstance(self._in_settings, dict) else {}
+        plots = (
+            self._in_settings.get("plots", {})
+            if isinstance(self._in_settings, dict)
+            else {}
+        )
         limits = plots.get("limits", {}) if isinstance(plots, dict) else {}
         limits_real = limits.get("real", {}) if isinstance(limits, dict) else {}
         limits_cplx = limits.get("complex", {}) if isinstance(limits, dict) else {}
@@ -397,8 +409,12 @@ class PlotDisplaySettingsDialog(QDialog):
         # enable/disable limits fields
         def apply_limits_enabled(on: bool) -> None:
             for w in (
-                self.real_ymin, self.real_ymax,
-                self.c_xmin, self.c_xmax, self.c_ymin, self.c_ymax,
+                self.real_ymin,
+                self.real_ymax,
+                self.c_xmin,
+                self.c_xmax,
+                self.c_ymin,
+                self.c_ymax,
             ):
                 w.setEnabled(bool(on))
 
@@ -424,9 +440,12 @@ class PlotDisplaySettingsDialog(QDialog):
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_save.clicked.connect(self._on_save)
 
-        
     def result_settings(self) -> Optional[Dict[str, Any]]:
-        return copy.deepcopy(self._out_settings) if isinstance(self._out_settings, dict) else None
+        return (
+            copy.deepcopy(self._out_settings)
+            if isinstance(self._out_settings, dict)
+            else None
+        )
 
     def _on_save(self) -> None:
         if self.chk_limits.isChecked():
@@ -440,7 +459,11 @@ class PlotDisplaySettingsDialog(QDialog):
                 QMessageBox.warning(self, "Границы", "Complex: нужно Ymax > Ymin.")
                 return
 
-        st = copy.deepcopy(self._in_settings) if isinstance(self._in_settings, dict) else {}
+        st = (
+            copy.deepcopy(self._in_settings)
+            if isinstance(self._in_settings, dict)
+            else {}
+        )
         st.setdefault("version", 1)
 
         plots = st.get("plots")
@@ -472,21 +495,13 @@ class PlotDisplaySettingsDialog(QDialog):
         self._out_settings = st
         self.settingsApplied.emit(copy.deepcopy(st))
         return
-    
-    
-    
-    
-    
-    
+
+
 # --- Gradient profile editor -------------------------------------------------
 
 
-
-
 def show_gradient_profile_dialog(
-    key: str = "default",
-    parent=None,
-    init: Optional[Dict[str, Any]] = None
+    key: str = "default", parent=None, init: Optional[Dict[str, Any]] = None
 ):
     k = str(key or "default")
     w = _GRAD_PROFILE_WINDOWS.get(k)
@@ -585,7 +600,7 @@ class GradientProfileDialog(QDialog):
         # ожидаем структуру типа:
         # {"mode": "real"|"complex", "ymax": float, "x": [...], "re": [...], "im": [...]}
         mode = str(init.get("mode", "real")).lower()
-        self._mode_complex = (mode == "complex")
+        self._mode_complex = mode == "complex"
         try:
             self._ymax = float(init.get("ymax", self._ymax))
         except Exception:
@@ -594,7 +609,12 @@ class GradientProfileDialog(QDialog):
         x = init.get("x")
         re = init.get("re")
         im = init.get("im")
-        if isinstance(x, (list, tuple)) and isinstance(re, (list, tuple)) and len(x) == len(re) and 3 <= len(x) <= 7:
+        if (
+            isinstance(x, (list, tuple))
+            and isinstance(re, (list, tuple))
+            and len(x) == len(re)
+            and 3 <= len(x) <= 7
+        ):
             self._x = np.asarray(x, dtype=float)
             self._yre = np.asarray(re, dtype=float)
             if isinstance(im, (list, tuple)) and len(im) == len(x):
@@ -615,47 +635,44 @@ class GradientProfileDialog(QDialog):
             "im": [float(v) for v in yim_s],
         }
 
-
-
     def _sanitize_points(self) -> None:
         # clip
         self._x = np.clip(self._x, 0.0, 1.0)
         self._yre = np.clip(self._yre, 0.0, float(self._ymax))
         self._yim = np.clip(self._yim, 0.0, float(self._ymax))
-    
+
         # фиксируем крайние X
         if int(self._x.size) >= 2:
             self._x[0] = 0.0
             self._x[-1] = 1.0
 
-
     def _interp_curve(self, x: np.ndarray, y: np.ndarray, xs: np.ndarray) -> np.ndarray:
         f = PchipInterpolator(x, y, extrapolate=True)
         return np.asarray(f(xs), dtype=float)
 
-
     def _redraw(self) -> None:
         # внутри диалога точки не сортируем (индексы стабильны)
         self._sanitize_points()
-    
+
         xs_dense = np.linspace(0.0, 1.0, 400)
-    
+
         xs_s, yre_s, yim_s = self._sorted_export_arrays()
-    
+
         yre_dense = self._interp_curve(xs_s, yre_s, xs_dense)
-        yim_dense = self._interp_curve(xs_s, yim_s, xs_dense) if self._mode_complex else None
-    
+        yim_dense = (
+            self._interp_curve(xs_s, yim_s, xs_dense) if self._mode_complex else None
+        )
+
         self.canvas.set_profile(
             xs=xs_dense,
             yre=yre_dense,
             yim=yim_dense,
-            ctrl_x=self._x,      # как есть (не сортируем)
+            ctrl_x=self._x,  # как есть (не сортируем)
             ctrl_re=self._yre,
             ctrl_im=self._yim,
             ymax=float(self._ymax),
             complex_mode=bool(self._mode_complex),
         )
-
 
     def _on_complex_toggled(self, on: bool) -> None:
         self._mode_complex = bool(on)
@@ -666,20 +683,19 @@ class GradientProfileDialog(QDialog):
         n = max(3, min(7, n))
         if n == self._npts:
             return
-    
+
         # берём "экспортный" (отсортированный) профиль и пересэмплируем
         xs_s, yre_s, yim_s = self._sorted_export_arrays()
-    
+
         x_new = np.linspace(0.0, 1.0, n)
         re_new = self._interp_curve(xs_s, yre_s, x_new)
         im_new = self._interp_curve(xs_s, yim_s, x_new)
-    
+
         self._x = x_new
         self._yre = re_new
         self._yim = im_new
         self._npts = n
         self._redraw()
-
 
     def _on_ymax_changed(self, v: float) -> None:
         try:
@@ -698,26 +714,24 @@ class GradientProfileDialog(QDialog):
     def _on_apply(self) -> None:
         self.profileApplied.emit(self.export_profile())
 
-
     # called from canvas
     def _set_ctrl_point(self, which: str, idx: int, x: float, y: float) -> None:
         if not (0 <= idx < int(self._x.size)):
             return
-    
+
         # крайние точки по X фиксированы
         if idx == 0:
             x = 0.0
         elif idx == int(self._x.size) - 1:
             x = 1.0
-    
+
         self._x[idx] = float(x)
         if which == "im":
             self._yim[idx] = float(y)
         else:
             self._yre[idx] = float(y)
-    
-        self._redraw()
 
+        self._redraw()
 
     def _sorted_export_arrays(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -726,25 +740,25 @@ class GradientProfileDialog(QDialog):
         Требование PCHIP: x 1D монотонно возрастающий и без дублей. [web:13]
         """
         self._sanitize_points()
-    
+
         idx = np.argsort(np.asarray(self._x, dtype=float))
         xs = np.asarray(self._x, dtype=float)[idx].copy()
         yre = np.asarray(self._yre, dtype=float)[idx].copy()
         yim = np.asarray(self._yim, dtype=float)[idx].copy()
-    
+
         # строго возрастающий xs (устраняем дубли)
         eps = 1e-6
         for i in range(1, int(xs.size)):
             if xs[i] <= xs[i - 1]:
                 xs[i] = min(1.0, xs[i - 1] + eps)
-    
+
         # фиксируем края
         if int(xs.size) >= 2:
             xs[0] = 0.0
             xs[-1] = 1.0
             if int(xs.size) >= 3 and xs[-2] >= xs[-1]:
                 xs[-2] = max(0.0, xs[-1] - eps)
-    
+
         return xs, yre, yim
 
 
@@ -786,7 +800,11 @@ class GradientProfileCanvas(PlotCanvasQt):
     ) -> None:
         self._xs = np.asarray(xs, dtype=float)
         self._yre = np.asarray(yre, dtype=float)
-        self._yim = np.asarray(yim, dtype=float) if yim is not None else np.array([], dtype=float)
+        self._yim = (
+            np.asarray(yim, dtype=float)
+            if yim is not None
+            else np.array([], dtype=float)
+        )
 
         self._ctrl_x = np.asarray(ctrl_x, dtype=float)
         self._ctrl_re = np.asarray(ctrl_re, dtype=float)
@@ -796,7 +814,8 @@ class GradientProfileCanvas(PlotCanvasQt):
         self._complex = bool(complex_mode)
 
         self.plot_xy(
-            self._xs, self._yre,
+            self._xs,
+            self._yre,
             x_label="t (0..1)",
             y_label="n(t) / k(t)",
             title="Gradient profile",
@@ -849,7 +868,7 @@ class GradientProfileCanvas(PlotCanvasQt):
                 pt = self._to_px(float(xv), float(yv))
                 dx = float(pt.x()) - float(pos.x())
                 dy = float(pt.y()) - float(pos.y())
-                d2 = dx*dx + dy*dy
+                d2 = dx * dx + dy * dy
                 if best_d2 is None or d2 < best_d2:
                     best_d2 = d2
                     best = (which, int(i))

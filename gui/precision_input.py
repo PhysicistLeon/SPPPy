@@ -31,7 +31,6 @@ from PyQt5.QtWidgets import (
 )
 
 
-
 class SelectAllLineEdit(QLineEdit):
     """QLineEdit, который выделяет весь текст при получении фокуса и при клике."""
 
@@ -52,9 +51,9 @@ class DigitCell(QWidget):
     - стрелки влево/вправо перемещают фокус между соседними цифрами
     """
 
-    digitEdited = pyqtSignal(int, int)      # (index, digit 0..9)
-    stepRequested = pyqtSignal(int, int)    # (index, direction +1/-1)
-    focusMoveRequested = pyqtSignal(int)    # (+1 right, -1 left)
+    digitEdited = pyqtSignal(int, int)  # (index, digit 0..9)
+    stepRequested = pyqtSignal(int, int)  # (index, direction +1/-1)
+    focusMoveRequested = pyqtSignal(int)  # (+1 right, -1 left)
 
     def __init__(self, index: int, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -185,6 +184,7 @@ class DigitCell(QWidget):
 @dataclass(frozen=True)
 class DigitFormat:
     """Сколько разрядов: целые + дробные."""
+
     integer_digits: int = 4
     decimal_digits: int = 3
 
@@ -199,7 +199,7 @@ class DigitFormat:
     @property
     def max_scaled(self) -> int:
         # максимум для total_digits (например, 4+3 -> 9999999)
-        return (10 ** self.total_digits) - 1
+        return (10**self.total_digits) - 1
 
 
 class DigitNumberEdit(QWidget):
@@ -230,7 +230,13 @@ class DigitNumberEdit(QWidget):
     ):
         super().__init__(parent)
 
-        self._fmt = fmt if fmt is not None else DigitFormat(integer_digits=integer_digits, decimal_digits=decimal_digits)
+        self._fmt = (
+            fmt
+            if fmt is not None
+            else DigitFormat(
+                integer_digits=integer_digits, decimal_digits=decimal_digits
+            )
+        )
         self._scaled = 0
         self._updating = False
 
@@ -304,7 +310,9 @@ class DigitNumberEdit(QWidget):
             self._cells[0].focusAndSelect()
 
     def _render_from_scaled(self) -> None:
-        s = str(self._scaled).rjust(self._fmt.total_digits, "0")[-self._fmt.total_digits:]
+        s = str(self._scaled).rjust(self._fmt.total_digits, "0")[
+            -self._fmt.total_digits :
+        ]
         self._updating = True
         try:
             for i, ch in enumerate(s):
