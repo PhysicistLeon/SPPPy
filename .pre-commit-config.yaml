@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.csv$
+      - id: end-of-file-fixer
+        exclude: \.csv$
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff
+        entry: C:/Users/Astra/scoop/apps/python312/3.12.10/python.exe -m ruff check
+        language: system
+        types: [python]
+        args: ["SPPPy/", "tests/", "gui/"]
+
+      - id: pylint
+        name: pylint
+        entry: C:/Users/Astra/scoop/apps/python312/3.12.10/python.exe -m pylint
+        language: system
+        types: [python]
+        args: [
+          "--disable=all",
+          "--enable=E,F,W0611,W0612,W0101,W0401",
+          "--max-line-length=120",
+          "--errors-only",
+          "--score=n",
+          "SPPPy/"
+        ]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: pytest
+        name: pytest
+        entry: C:/Users/Astra/scoop/apps/python312/3.12.10/python.exe -m pytest
+        language: system
+        types: [python]
+        args: ["tests/", "-v", "--tb=short"]
+        pass_filenames: false
