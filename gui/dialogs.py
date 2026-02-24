@@ -259,26 +259,6 @@ class CRIDialog(QDialog):
         self.info.setText(f"Наведение: λ = {wl:.4g} μm, n = {n:.6g}, k = {k:.6g}")
 
 
-# Если у тебя в layer.py вызывается show_cri_dialog(...), оставь этот thin-wrapper:
-_CRI_WINDOWS: Dict[str, CRIDialog] = {}
-
-
-def show_cri_dialog(material: str, parent=None) -> None:
-    key = str(material or "").strip() or "Air"
-    w = _CRI_WINDOWS.get(key)
-    if w is not None:
-        w.show()
-        w.raise_()
-        w.activateWindow()
-        return
-    w = CRIDialog(key, parent=parent)
-    _CRI_WINDOWS[key] = w
-    w.destroyed.connect(lambda _obj=None, k=key: _CRI_WINDOWS.pop(k, None))
-    w.show()
-    w.raise_()
-    w.activateWindow()
-
-
 class PlotDisplaySettingsDialog(QDialog):
     settingsApplied = pyqtSignal(dict)
 

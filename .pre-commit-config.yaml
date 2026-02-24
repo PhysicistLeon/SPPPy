@@ -21,7 +21,7 @@ repos:
         entry: C:/Users/Astra/scoop/apps/python312/3.12.10/python.exe -m ruff check
         language: system
         types: [python]
-        args: ["--ignore=F403,F405,E701,E731,F841,F811", "SPPPy/", "tests/", "gui/"]
+        args: ["--ignore=F403,F405,E701,E731,F841", "SPPPy/", "tests/", "gui/"]
 
       - id: pylint
         name: pylint
