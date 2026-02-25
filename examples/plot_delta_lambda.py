@@ -8,10 +8,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------
-# Paths (SPPPy/, PermittivitiesBase.csv, find_minima.py are рядом)
+# Paths (SPPPy/ is in parent directory)
 # ------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
-sys.path.insert(0, str(BASE_DIR))  # чтобы работали import SPPPy и import find_minima
+PROJECT_ROOT = BASE_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from SPPPy import ExperimentSPR, Layer, MaterialDispersion, nm  # noqa: E402
 from find_minima import find_resonance_wavelength  # noqa: E402
@@ -76,7 +77,7 @@ def build_default_kretschmann_exp(base_csv_path: Path) -> ExperimentSPR:
 # Main
 # ------------------------------------------------------------
 def main():
-    base_csv = BASE_DIR.parent / "PermittivitiesBase.csv"
+    base_csv = PROJECT_ROOT / "PermittivitiesBase.csv"
 
     # Если у тебя exp уже собирается отдельно — подставь его вместо этой строки.
     exp = build_default_kretschmann_exp(base_csv)

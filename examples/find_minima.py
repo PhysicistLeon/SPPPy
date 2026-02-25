@@ -8,10 +8,11 @@ import numpy as np
 from scipy.optimize import minimize_scalar
 
 # ------------------------------------------------------------
-# Paths (SPPPy/ and PermittivitiesBase.csv are next to this script)
+# Paths (SPPPy/ is in parent directory)
 # ------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
-sys.path.insert(0, str(BASE_DIR))  # so "import SPPPy" works from sibling folder
+PROJECT_ROOT = BASE_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from SPPPy import ExperimentSPR, Layer, MaterialDispersion, nm  # noqa: E402
 
@@ -248,7 +249,7 @@ def find_resonance_wavelength(
 
 
 def main():
-    BASE_CSV = BASE_DIR.parent / "PermittivitiesBase.csv"
+    BASE_CSV = PROJECT_ROOT / "PermittivitiesBase.csv"
 
     # ------------------------------------------------------------
     # User parameters (easy to tweak)

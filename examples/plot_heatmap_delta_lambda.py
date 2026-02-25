@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 
 # ------------------------------------------------------------
-# Paths (SPPPy/, PermittivitiesBase.csv, find_minima.py are рядом)
+# Paths (SPPPy/ is in parent directory)
 # ------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
-sys.path.insert(0, str(BASE_DIR))
+PROJECT_ROOT = BASE_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from SPPPy import ExperimentSPR, Layer, MaterialDispersion, nm  # noqa: E402
 from find_minima import find_resonance_wavelength  # noqa: E402
@@ -79,7 +80,7 @@ def is_edge_minimum(lambda_res_nm: float, used_range_nm, wl_step_nm: float) -> b
 # Main
 # ------------------------------------------------------------
 def main():
-    base_csv = BASE_DIR.parent / "PermittivitiesBase.csv"
+    base_csv = PROJECT_ROOT / "PermittivitiesBase.csv"
     exp = build_default_kretschmann_exp(base_csv)
     sio2_layer = get_layer_by_name(exp, "SiO2")
     SIO2_LAYER_INDEX = 2  # Индекс слоя SiO2 в структуре BK7/Ag/SiO2/Air
