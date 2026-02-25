@@ -120,7 +120,10 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
     )
 
     stats = benchmark.stats.stats
-    mean_seconds = float(stats["mean"])
+    mean_val = getattr(stats, "mean", None)
+    if mean_val is None:
+        mean_val = stats["mean"]
+    mean_seconds = float(mean_val)
     curves_per_sec = float(curves_count) / mean_seconds if mean_seconds > 0 else 0.0
 
     benchmark.extra_info.update(
