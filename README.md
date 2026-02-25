@@ -148,3 +148,106 @@ MIT License
 ## Авторы
 
 Библиотека разработана для расчёта SPR-экспериментов в оптических системах.
+
+## Performance baseline (API)
+
+Ниже зафиксирована официальная спецификация baseline для сравнения производительности между PR.
+
+### Определение KPI `curves/sec`
+
+- **Scenario A**: 1 curve = **одно значение** `R` для фиксированных `(θ, λ)` при одном значении толщины (baseline-цикл через `R_deg`).
+- **Scenario A_FAST**: 1 curve = **одно значение** `R` для фиксированных `(θ, λ)` при одном значении толщины (оптимизированный путь через `R_vs_thickness`).
+- **Scenario B**: 1 curve = **полный массив** `R(λ)` по всей λ-сетке для одного значения толщины.
+- **Scenario C**: 1 curve = **полный массив** `R(θ)` по всей θ-сетке для одного значения толщины.
+- **Scenario B_FAST**: 1 curve = **полный массив** `R(λ)` (оптимизированный путь через `R_lambda_vs_thickness`) для одного значения толщины.
+- **Scenario C_FAST**: 1 curve = **полный массив** `R(θ)` (оптимизированный путь через `R_theta_vs_thickness`) для одного значения толщины.
+- **Scenario A_PAR/B_PAR/C_PAR**: те же определения, но с multiprocessing по независимым значениям толщины.
+
+`curves/sec = curves_count / mean_seconds_per_benchmark_call`.
+
+### Эталонные сетки по умолчанию
+
+- `θ`: 40°..70°, шаг 0.1°
+- `λ`: 400..700 нм, шаг 1 нм
+- `thickness`: 0..100 нм, шаг 1 нм
+
+Структура в baseline: **Prism / Ag(55 нм) / SiO2(variable) / Air**.
+
+### Режим измерений
+
+- single-thread baseline
+- reference-режим (детальный): warmup **5**, measured rounds **30**
+- CI smoke-режим (быстрый): warmup **2**, measured rounds **10**
+- статистика в отчётах: mean, median, stddev, p95 (из данных pytest-benchmark)
+
+По умолчанию тесты используют reference-режим, но параметры можно переопределять переменными
+`PERF_BENCH_WARMUP_ROUNDS` и `PERF_BENCH_ROUNDS`.
+
+### Фиксация машины CI для сопоставимости
+
+Для baseline используем закреплённый раннер:
+
+- `ubuntu-22.04` (GitHub-hosted)
+- Python `3.11`
+- без параллельного запуска benchmark-job в рамках workflow
+
+Workflow `perf-baseline` запускается автоматически на `pull_request` (для изменений в коде/тестах baseline) и вручную через `workflow_dispatch`. Это делает сравнение между PR более сопоставимым.
+
+Чтобы не перегружать PR-пайплайн, в CI workflow используется smoke-конфигурация сеток:
+
+- `PERF_THETA_STEP_DEG=0.2`
+- `PERF_WL_STEP_NM=2.0`
+- `PERF_H_STEP_NM=2.0`
+- `PERF_BENCH_WARMUP_ROUNDS=2`
+- `PERF_BENCH_ROUNDS=10`
+
+Для более точного сравнения можно запускать reference-конфигурацию вручную (`workflow_dispatch`) с более плотной сеткой и 5/30.
+
+См. workflow: `.github/workflows/perf-baseline.yml`.
+
+> Важно: локальные замеры на Windows 11 / Python 3.12 полезны для локального анализа, но не стоит напрямую сравнивать их с CI baseline из-за различий ОС, интерпретатора и железа. Сравнение «до/после» для PR лучше делать по CI-артефактам.
+
+### Запуск baseline и экспорт JSON + CSV
+
+```bash
+RUN_PERF_BASELINE=1 pytest tests/test_performance_baseline.py \
+  --benchmark-only \
+  --benchmark-json artifacts/benchmark/benchmark.json
+
+python tests/benchmark_to_csv.py \
+  --benchmark-json artifacts/benchmark/benchmark.json \
+  --csv-output artifacts/benchmark/benchmark_summary.csv
+
+python tests/benchmark_compare.py \
+  --benchmark-json artifacts/benchmark/benchmark.json \
+  --summary-json artifacts/benchmark/benchmark_compare.json \
+  --summary-md artifacts/benchmark/benchmark_compare.md
+```
+
+Можно переопределять сетки через переменные окружения:
+
+- `PERF_THETA_START_DEG`, `PERF_THETA_STOP_DEG`, `PERF_THETA_STEP_DEG`
+- `PERF_WL_START_NM`, `PERF_WL_STOP_NM`, `PERF_WL_STEP_NM`
+- `PERF_H_START_NM`, `PERF_H_STOP_NM`, `PERF_H_STEP_NM`
+- `PERF_PAR_WORKERS` (например, `2` или `4`)
+
+### Двухступенчатое профилирование
+
+```bash
+python tests/profile_baseline.py --output-dir artifacts/profiling --mode both
+```
+
+- Stage 1: `cProfile` + `pstats` (top cumulative)
+- Stage 2: `line_profiler` для `Transfer_matrix`, `R_vs_thickness`, `R_lambda_vs_thickness`, `R_theta_vs_thickness`, `Layer.S_matrix`, `DispersionABS.CRI` (если пакет установлен)
+- Поддерживаемые режимы: `--mode baseline`, `--mode fast`, `--mode both` (по умолчанию `both`).
+
+### Управление глобальным `M_cache` (фаза оптимизаций)
+
+Добавлены API-хелперы для контроля глобального кеша межслойных матриц:
+
+- `SPPPy.set_m_cache_limit(maxsize)`
+- `SPPPy.get_m_cache_limit()`
+- `SPPPy.get_m_cache_size()`
+- `SPPPy.clear_m_cache()`
+
+Текущая политика: при достижении лимита кеш полностью очищается (`clear-on-limit`).
