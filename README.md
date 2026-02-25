@@ -216,6 +216,11 @@ RUN_PERF_BASELINE=1 pytest tests/test_performance_baseline.py \
 python tests/benchmark_to_csv.py \
   --benchmark-json artifacts/benchmark/benchmark.json \
   --csv-output artifacts/benchmark/benchmark_summary.csv
+
+python tests/benchmark_compare.py \
+  --benchmark-json artifacts/benchmark/benchmark.json \
+  --summary-json artifacts/benchmark/benchmark_compare.json \
+  --summary-md artifacts/benchmark/benchmark_compare.md
 ```
 
 Можно переопределять сетки через переменные окружения:
@@ -227,11 +232,12 @@ python tests/benchmark_to_csv.py \
 ### Двухступенчатое профилирование
 
 ```bash
-python tests/profile_baseline.py --output-dir artifacts/profiling
+python tests/profile_baseline.py --output-dir artifacts/profiling --mode both
 ```
 
 - Stage 1: `cProfile` + `pstats` (top cumulative)
-- Stage 2: `line_profiler` для `Transfer_matrix`, `Layer.S_matrix`, `DispersionABS.CRI` (если пакет установлен)
+- Stage 2: `line_profiler` для `Transfer_matrix`, `R_vs_thickness`, `R_lambda_vs_thickness`, `R_theta_vs_thickness`, `Layer.S_matrix`, `DispersionABS.CRI` (если пакет установлен)
+- Поддерживаемые режимы: `--mode baseline`, `--mode fast`, `--mode both` (по умолчанию `both`).
 
 ### Управление глобальным `M_cache` (фаза оптимизаций)
 

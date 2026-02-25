@@ -39,7 +39,7 @@ def _build_experiment() -> tuple[ExperimentSPR, Layer]:
 
 
 def run_baseline_workload() -> float:
-    """Execute representative single-thread baseline workload and return checksum."""
+    """Execute representative baseline workload and return checksum."""
     exp, sio2_layer = _build_experiment()
     theta_deg = _grid(40.0, 70.0, 0.2)
     lambda_nm = _grid(450.0, 650.0, 2.0)
@@ -48,7 +48,6 @@ def run_baseline_workload() -> float:
     checksum = 0.0
     for h_nm in thickness_nm:
         sio2_layer.thickness = float(h_nm) * nm
-        # mixed workload across B + C flavors
         curve_theta = np.array(exp.R(angle_range=theta_deg, wl_range=None, angle=None))
         checksum += float(np.sum(curve_theta))
 
@@ -61,15 +60,30 @@ def run_baseline_workload() -> float:
     return checksum
 
 
-def run_cprofile(output_dir: Path, top_n: int = 25) -> None:
-    """Profile baseline workload with cProfile and save pstats artifacts."""
+def run_fast_workload() -> float:
+    """Execute optimized workload using *_vs_thickness APIs and return checksum."""
+    exp, _ = _build_experiment()
+    theta_deg = _grid(40.0, 70.0, 0.2)
+    lambda_m = _grid(450.0, 650.0, 2.0) * nm
+    thickness_m = _grid(0.0, 100.0, 2.0) * nm
+
+    curves_lambda = exp.R_lambda_vs_thickness(2, thickness_m, lambda_m, theta=float(theta_deg[0]))
+    curves_theta = exp.R_theta_vs_thickness(2, thickness_m, theta_deg, wl=float(lambda_m[0]))
+
+    return float(np.sum(np.array(curves_lambda)) + np.sum(np.array(curves_theta)))
+
+
+def run_cprofile(output_dir: Path, mode: str, top_n: int = 25) -> None:
+    """Profile selected workload with cProfile and save pstats artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    profile_path = output_dir / "baseline.cprofile"
-    txt_path = output_dir / "baseline_pstats.txt"
+    profile_path = output_dir / f"{mode}.cprofile"
+    txt_path = output_dir / f"{mode}_pstats.txt"
+
+    workload = run_fast_workload if mode == "fast" else run_baseline_workload
 
     prof = cProfile.Profile()
     prof.enable()
-    checksum = run_baseline_workload()
+    checksum = workload()
     prof.disable()
     prof.dump_stats(str(profile_path))
 
@@ -80,7 +94,7 @@ def run_cprofile(output_dir: Path, top_n: int = 25) -> None:
     txt_path.write_text(stream.getvalue(), encoding="utf-8")
 
 
-def run_line_profiler(output_dir: Path) -> bool:
+def run_line_profiler(output_dir: Path, mode: str) -> bool:
     """Profile hot path with line_profiler when dependency is available."""
     try:
         # pylint: disable=import-outside-toplevel
@@ -94,14 +108,18 @@ def run_line_profiler(output_dir: Path) -> bool:
     from SPPPy.materials import Layer as LayerImpl
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    txt_path = output_dir / "baseline_line_profiler.txt"
+    txt_path = output_dir / f"{mode}_line_profiler.txt"
 
     lp = LineProfiler()
     lp.add_function(ExperimentSPRImpl.Transfer_matrix)
+    lp.add_function(ExperimentSPRImpl.R_vs_thickness)
+    lp.add_function(ExperimentSPRImpl.R_lambda_vs_thickness)
+    lp.add_function(ExperimentSPRImpl.R_theta_vs_thickness)
     lp.add_function(LayerImpl.S_matrix)
     lp.add_function(DispersionABS.CRI)
 
-    wrapped = lp(run_baseline_workload)
+    workload = run_fast_workload if mode == "fast" else run_baseline_workload
+    wrapped = lp(workload)
     checksum = wrapped()
 
     with txt_path.open("w", encoding="utf-8") as fh:
@@ -120,12 +138,21 @@ def main() -> None:
         default=Path("artifacts/profiling"),
         help="Directory where profiling artifacts will be written",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["baseline", "fast", "both"],
+        default="both",
+        help="Which workload profile to run",
+    )
     args = parser.parse_args()
 
-    run_cprofile(args.output_dir)
-    has_line_profiler = run_line_profiler(args.output_dir)
-    if not has_line_profiler:
-        print("line_profiler is not installed; skipped stage 2.")
+    modes = ["baseline", "fast"] if args.mode == "both" else [args.mode]
+
+    for mode in modes:
+        run_cprofile(args.output_dir, mode)
+        has_line_profiler = run_line_profiler(args.output_dir, mode)
+        if not has_line_profiler:
+            print(f"line_profiler is not installed; skipped stage 2 ({mode}).")
 
 
 if __name__ == "__main__":

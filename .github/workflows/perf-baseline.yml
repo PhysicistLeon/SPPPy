@@ -48,6 +48,12 @@ jobs:
             --benchmark-json artifacts/benchmark/benchmark.json \
             --csv-output artifacts/benchmark/benchmark_summary.csv
 
+
+      - name: Build benchmark comparison summary
+        run: |
+          python tests/benchmark_compare.py             --benchmark-json artifacts/benchmark/benchmark.json             --summary-json artifacts/benchmark/benchmark_compare.json             --summary-md artifacts/benchmark/benchmark_compare.md
+          cat artifacts/benchmark/benchmark_compare.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run profiling
         run: |
           python tests/profile_baseline.py --output-dir artifacts/profiling
