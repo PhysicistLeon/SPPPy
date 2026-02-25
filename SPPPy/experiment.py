@@ -266,6 +266,87 @@ class ExperimentSPR:
         else:
             return 1 / M0[0, 0]
 
+
+    def R_vs_thickness(
+        self,
+        layer_index,
+        thicknesses,
+        theta=None,
+        wl=None,
+        is_complex=False,
+    ):
+        """Fast sweep of reflectance versus thickness for one layer.
+
+        This method is optimized for workloads where only one layer thickness changes
+        while the rest of the multilayer stack is fixed. It reuses precomputed prefix
+        and suffix products of S-matrices and recomputes only the target layer matrix.
+
+        Parameters
+        ----------
+        layer_index : int
+            Index of layer to vary.
+        thicknesses : iterable
+            Sequence of layer thickness values in meters.
+        theta : float, optional
+            Incidence angle in degrees. Uses ``self.incidence_angle`` if omitted.
+        wl : float, optional
+            Wavelength in meters. Uses ``self.wavelength`` if omitted.
+        is_complex : bool, optional
+            If True returns complex reflection coefficient r.
+            Otherwise returns reflectance |r|^2.
+
+        Returns
+        -------
+        list
+            Reflection values for each thickness in input sequence.
+        """
+        if layer_index < 0 or layer_index >= len(self.layers):
+            raise IndexError("layer_index out of range")
+
+        theta_val = theta if theta is not None else self.incidence_angle
+        k_0 = 2 * np.pi / wl if wl is not None else self.k0
+
+        kx0 = np.power(k_0 * self.n[0] * np.sin(np.pi * theta_val / 180), 2)
+
+        # Precompute fixed stack products around target layer.
+        left = np.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]])
+        for idx in range(0, layer_index):
+            lining = "TOP" if idx == 0 else "MIDLE"
+            left = left @ self.layers[idx].S_matrix(k_0, kx0, lining, self.polarization)
+
+        right = np.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]])
+        for idx in range(layer_index + 1, len(self.layers)):
+            lining = "BOTTOM" if idx == len(self.layers) - 1 else "MIDLE"
+            right = right @ self.layers[idx].S_matrix(k_0, kx0, lining, self.polarization)
+
+        # Resolve lining for varied layer once.
+        if layer_index == 0:
+            var_lining = "TOP"
+        elif layer_index == len(self.layers) - 1:
+            var_lining = "BOTTOM"
+        else:
+            var_lining = "MIDLE"
+
+        varied_layer = self.layers[layer_index]
+        result = []
+
+        for thickness in thicknesses:
+            varied_layer.thickness = float(thickness)
+            M_var = varied_layer.S_matrix(k_0, kx0, var_lining, self.polarization)
+            M0 = left @ M_var @ right
+
+            if M0[0, 0] == 0:
+                r = 1
+            else:
+                r = M0[1, 0] / M0[0, 0]
+
+            if is_complex:
+                result.append(r)
+            else:
+                result.append(np.abs(r) ** 2)
+
+        return result
+
     def Transfer_matrix(self, theta, k_0):
         """Parameters.
 
