@@ -23,6 +23,10 @@ def _float_env(name: str, default: float) -> float:
     return float(os.getenv(name, str(default)))
 
 
+def _int_env(name: str, default: int) -> int:
+    return int(os.getenv(name, str(default)))
+
+
 def _grid(start: float, stop: float, step: float) -> np.ndarray:
     count = int(round((stop - start) / step)) + 1
     return np.linspace(start, stop, count)
@@ -105,11 +109,14 @@ def _scenario_c(grids: dict) -> tuple[int, float]:
 
 def _run_benchmark(benchmark, scenario_name: str, runner):
     grids = _default_grids()
+    rounds = _int_env("PERF_BENCH_ROUNDS", 30)
+    warmup_rounds = _int_env("PERF_BENCH_WARMUP_ROUNDS", 5)
+
     curves_count, checksum = benchmark.pedantic(
         lambda: runner(grids),
-        rounds=30,
+        rounds=rounds,
         iterations=1,
-        warmup_rounds=5,
+        warmup_rounds=warmup_rounds,
     )
 
     stats = benchmark.stats.stats
@@ -146,6 +153,8 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
             "curves_count": int(curves_count),
             "curves_per_sec": curves_per_sec,
             "checksum": float(checksum),
+            "rounds": rounds,
+            "warmup_rounds": warmup_rounds,
         }
     )
 

@@ -16,6 +16,11 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       RUN_PERF_BASELINE: "1"
+      PERF_BENCH_ROUNDS: "10"
+      PERF_BENCH_WARMUP_ROUNDS: "2"
+      PERF_THETA_STEP_DEG: "0.2"
+      PERF_WL_STEP_NM: "2.0"
+      PERF_H_STEP_NM: "2.0"
     steps:
       - uses: actions/checkout@v4
 

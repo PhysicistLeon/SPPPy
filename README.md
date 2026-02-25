@@ -172,9 +172,12 @@ MIT License
 ### Режим измерений
 
 - single-thread baseline
-- warmup: **5 итераций**
-- measured rounds: **30**
+- reference-режим (детальный): warmup **5**, measured rounds **30**
+- CI smoke-режим (быстрый): warmup **2**, measured rounds **10**
 - статистика в отчётах: mean, median, stddev, p95 (из данных pytest-benchmark)
+
+По умолчанию тесты используют reference-режим, но параметры можно переопределять переменными
+`PERF_BENCH_WARMUP_ROUNDS` и `PERF_BENCH_ROUNDS`.
 
 ### Фиксация машины CI для сопоставимости
 
@@ -185,6 +188,16 @@ MIT License
 - без параллельного запуска benchmark-job в рамках workflow
 
 Workflow `perf-baseline` запускается автоматически на `pull_request` (для изменений в коде/тестах baseline) и вручную через `workflow_dispatch`. Это делает сравнение между PR более сопоставимым.
+
+Чтобы не перегружать PR-пайплайн, в CI workflow используется smoke-конфигурация сеток:
+
+- `PERF_THETA_STEP_DEG=0.2`
+- `PERF_WL_STEP_NM=2.0`
+- `PERF_H_STEP_NM=2.0`
+- `PERF_BENCH_WARMUP_ROUNDS=2`
+- `PERF_BENCH_ROUNDS=10`
+
+Для более точного сравнения можно запускать reference-конфигурацию вручную (`workflow_dispatch`) с более плотной сеткой и 5/30.
 
 См. workflow: `.github/workflows/perf-baseline.yml`.
 
