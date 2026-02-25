@@ -53,3 +53,41 @@ def test_r_vs_thickness_matches_loop_for_complex_r():
     ref = np.array(ref)
 
     np.testing.assert_allclose(fast, ref, rtol=1e-12, atol=1e-14)
+
+
+def test_r_lambda_vs_thickness_matches_nested_loop():
+    exp = _build_exp()
+    theta = 62.0
+    thicknesses = np.linspace(0, 100, 11) * nm
+    wl_range = np.linspace(450, 650, 9) * nm
+
+    fast = np.array(exp.R_lambda_vs_thickness(2, thicknesses, wl_range, theta=theta))
+
+    exp2 = _build_exp()
+    ref = []
+    for h in thicknesses:
+        exp2.layers[2].thickness = float(h)
+        curve = [np.abs(exp2.R_deg(theta=theta, wl=float(wl))) ** 2 for wl in wl_range]
+        ref.append(curve)
+    ref = np.array(ref)
+
+    np.testing.assert_allclose(fast, ref, rtol=1e-12, atol=1e-14)
+
+
+def test_r_theta_vs_thickness_matches_nested_loop():
+    exp = _build_exp()
+    wl = 633.0 * nm
+    thicknesses = np.linspace(0, 100, 9) * nm
+    theta_range = np.linspace(45, 70, 13)
+
+    fast = np.array(exp.R_theta_vs_thickness(2, thicknesses, theta_range, wl=wl))
+
+    exp2 = _build_exp()
+    ref = []
+    for h in thicknesses:
+        exp2.layers[2].thickness = float(h)
+        curve = [np.abs(exp2.R_deg(theta=float(theta), wl=wl)) ** 2 for theta in theta_range]
+        ref.append(curve)
+    ref = np.array(ref)
+
+    np.testing.assert_allclose(fast, ref, rtol=1e-12, atol=1e-14)

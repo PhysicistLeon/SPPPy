@@ -107,6 +107,17 @@ def _scenario_b(grids: dict) -> tuple[int, float]:
     return len(grids["thickness_nm"]), checksum
 
 
+def _scenario_b_fast(grids: dict) -> tuple[int, float]:
+    exp, _ = _build_experiment()
+    theta = float(grids["theta_deg"][0])
+    thicknesses = grids["thickness_nm"] * nm
+    wl_range = grids["lambda_nm"] * nm
+
+    curves = exp.R_lambda_vs_thickness(2, thicknesses, wl_range, theta=theta)
+    checksum = float(np.sum(np.array(curves)))
+    return len(grids["thickness_nm"]), checksum
+
+
 def _scenario_c(grids: dict) -> tuple[int, float]:
     exp, sio2_layer = _build_experiment()
     exp.wavelength = grids["lambda_nm"][0] * nm
@@ -117,6 +128,17 @@ def _scenario_c(grids: dict) -> tuple[int, float]:
         curve = np.array(exp.R(angle_range=grids["theta_deg"]))
         checksum += float(np.sum(curve))
 
+    return len(grids["thickness_nm"]), checksum
+
+
+def _scenario_c_fast(grids: dict) -> tuple[int, float]:
+    exp, _ = _build_experiment()
+    wl = float(grids["lambda_nm"][0]) * nm
+    thicknesses = grids["thickness_nm"] * nm
+    theta_range = grids["theta_deg"]
+
+    curves = exp.R_theta_vs_thickness(2, thicknesses, theta_range, wl=wl)
+    checksum = float(np.sum(np.array(curves)))
     return len(grids["thickness_nm"]), checksum
 
 
@@ -147,6 +169,8 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
                 "B": "1 curve = one full R(lambda) array for one thickness",
                 "C": "1 curve = one full R(theta) array for one thickness",
                 "A_FAST": "1 curve = one scalar R (optimized R_vs_thickness) for one thickness",
+                "B_FAST": "1 curve = one full R(lambda) array (optimized) for one thickness",
+                "C_FAST": "1 curve = one full R(theta) array (optimized) for one thickness",
             },
             "grid": {
                 "theta_start_deg": float(grids["theta_deg"][0]),
@@ -227,9 +251,37 @@ def test_perf_scenario_b(benchmark):
     not _HAS_PYTEST_BENCHMARK,
     reason="pytest-benchmark is not installed",
 )
+def test_perf_scenario_b_fast(benchmark):
+    """Benchmark scenario B_FAST: full R(lambda) via optimized thickness sweep API."""
+    _run_benchmark(benchmark, "B_FAST", _scenario_b_fast)
+
+
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
 def test_perf_scenario_c(benchmark):
     """Benchmark scenario C: full R(theta) sweep per thickness."""
     _run_benchmark(benchmark, "C", _scenario_c)
+
+
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
+def test_perf_scenario_c_fast(benchmark):
+    """Benchmark scenario C_FAST: full R(theta) via optimized thickness sweep API."""
+    _run_benchmark(benchmark, "C_FAST", _scenario_c_fast)
 
 
 def test_perf_curve_spec_is_serializable():
@@ -240,6 +292,8 @@ def test_perf_curve_spec_is_serializable():
             "B": "one lambda-array",
             "C": "one theta-array",
             "A_FAST": "one scalar (optimized)",
+            "B_FAST": "one lambda-array (optimized)",
+            "C_FAST": "one theta-array (optimized)",
         }
     }
     json.dumps(payload)

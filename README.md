@@ -159,6 +159,8 @@ MIT License
 - **Scenario A_FAST**: 1 curve = **одно значение** `R` для фиксированных `(θ, λ)` при одном значении толщины (оптимизированный путь через `R_vs_thickness`).
 - **Scenario B**: 1 curve = **полный массив** `R(λ)` по всей λ-сетке для одного значения толщины.
 - **Scenario C**: 1 curve = **полный массив** `R(θ)` по всей θ-сетке для одного значения толщины.
+- **Scenario B_FAST**: 1 curve = **полный массив** `R(λ)` (оптимизированный путь через `R_lambda_vs_thickness`) для одного значения толщины.
+- **Scenario C_FAST**: 1 curve = **полный массив** `R(θ)` (оптимизированный путь через `R_theta_vs_thickness`) для одного значения толщины.
 
 `curves/sec = curves_count / mean_seconds_per_benchmark_call`.
 
