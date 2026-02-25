@@ -9,6 +9,10 @@ from .materials import (
     CompositeDispersion,
     ScaledDispersion,
     DispersionABS,
+    clear_m_cache,
+    set_m_cache_limit,
+    get_m_cache_limit,
+    get_m_cache_size,
 )
 
 __all__ = [
@@ -22,4 +26,8 @@ __all__ = [
     "CompositeDispersion",
     "ScaledDispersion",
     "DispersionABS",
+    "clear_m_cache",
+    "set_m_cache_limit",
+    "get_m_cache_limit",
+    "get_m_cache_size",
 ]
