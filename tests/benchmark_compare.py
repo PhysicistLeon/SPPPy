@@ -10,6 +10,9 @@ PAIRINGS = [
     ("A", "A_FAST"),
     ("B", "B_FAST"),
     ("C", "C_FAST"),
+    ("A", "A_PAR"),
+    ("B", "B_PAR"),
+    ("C", "C_PAR"),
 ]
 
 

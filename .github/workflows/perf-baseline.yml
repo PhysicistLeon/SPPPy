@@ -21,6 +21,7 @@ jobs:
       PERF_THETA_STEP_DEG: "0.2"
       PERF_WL_STEP_NM: "2.0"
       PERF_H_STEP_NM: "2.0"
+      PERF_PAR_WORKERS: "2"
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +52,10 @@ jobs:
 
       - name: Build benchmark comparison summary
         run: |
-          python tests/benchmark_compare.py             --benchmark-json artifacts/benchmark/benchmark.json             --summary-json artifacts/benchmark/benchmark_compare.json             --summary-md artifacts/benchmark/benchmark_compare.md
+          python tests/benchmark_compare.py \
+            --benchmark-json artifacts/benchmark/benchmark.json \
+            --summary-json artifacts/benchmark/benchmark_compare.json \
+            --summary-md artifacts/benchmark/benchmark_compare.md
           cat artifacts/benchmark/benchmark_compare.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run profiling

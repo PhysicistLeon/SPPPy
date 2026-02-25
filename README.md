@@ -161,6 +161,7 @@ MIT License
 - **Scenario C**: 1 curve = **полный массив** `R(θ)` по всей θ-сетке для одного значения толщины.
 - **Scenario B_FAST**: 1 curve = **полный массив** `R(λ)` (оптимизированный путь через `R_lambda_vs_thickness`) для одного значения толщины.
 - **Scenario C_FAST**: 1 curve = **полный массив** `R(θ)` (оптимизированный путь через `R_theta_vs_thickness`) для одного значения толщины.
+- **Scenario A_PAR/B_PAR/C_PAR**: те же определения, но с multiprocessing по независимым значениям толщины.
 
 `curves/sec = curves_count / mean_seconds_per_benchmark_call`.
 
@@ -228,6 +229,7 @@ python tests/benchmark_compare.py \
 - `PERF_THETA_START_DEG`, `PERF_THETA_STOP_DEG`, `PERF_THETA_STEP_DEG`
 - `PERF_WL_START_NM`, `PERF_WL_STOP_NM`, `PERF_WL_STEP_NM`
 - `PERF_H_START_NM`, `PERF_H_STOP_NM`, `PERF_H_STEP_NM`
+- `PERF_PAR_WORKERS` (например, `2` или `4`)
 
 ### Двухступенчатое профилирование
 

@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import sys
+from multiprocessing import get_context
 from pathlib import Path
 
 import numpy as np
@@ -142,6 +143,61 @@ def _scenario_c_fast(grids: dict) -> tuple[int, float]:
     return len(grids["thickness_nm"]), checksum
 
 
+def _parallel_worker(task):
+    mode, thickness_m, theta0_deg, wl0_m, lambda_range_m, theta_range_deg = task
+    exp, _ = _build_experiment()
+
+    if mode == "A_PAR":
+        val = exp.R_vs_thickness(2, [thickness_m], theta=theta0_deg, wl=wl0_m)[0]
+        return float(val)
+    if mode == "B_PAR":
+        curve = exp.R_lambda_vs_thickness(2, [thickness_m], lambda_range_m, theta=theta0_deg)[0]
+        return curve
+    if mode == "C_PAR":
+        curve = exp.R_theta_vs_thickness(2, [thickness_m], theta_range_deg, wl=wl0_m)[0]
+        return curve
+    raise ValueError(f"Unknown mode: {mode}")
+
+
+def _run_parallel(mode: str, grids: dict) -> tuple[int, float]:
+    workers = _int_env("PERF_PAR_WORKERS", 2)
+    theta0_deg = float(grids["theta_deg"][0])
+    wl0_m = float(grids["lambda_nm"][0]) * nm
+    lambda_range_m = [float(v) * nm for v in grids["lambda_nm"]]
+    theta_range_deg = [float(v) for v in grids["theta_deg"]]
+    thicknesses_m = [float(v) * nm for v in grids["thickness_nm"]]
+
+    tasks = [
+        (mode, h, theta0_deg, wl0_m, lambda_range_m, theta_range_deg)
+        for h in thicknesses_m
+    ]
+
+    if workers <= 1:
+        outputs = [_parallel_worker(task) for task in tasks]
+    else:
+        ctx = get_context("spawn")
+        with ctx.Pool(processes=workers) as pool:
+            outputs = pool.map(_parallel_worker, tasks)
+
+    if mode == "A_PAR":
+        checksum = float(np.sum(np.array(outputs)))
+    else:
+        checksum = float(np.sum(np.array(outputs, dtype=float)))
+    return len(grids["thickness_nm"]), checksum
+
+
+def _scenario_a_par(grids: dict) -> tuple[int, float]:
+    return _run_parallel("A_PAR", grids)
+
+
+def _scenario_b_par(grids: dict) -> tuple[int, float]:
+    return _run_parallel("B_PAR", grids)
+
+
+def _scenario_c_par(grids: dict) -> tuple[int, float]:
+    return _run_parallel("C_PAR", grids)
+
+
 def _run_benchmark(benchmark, scenario_name: str, runner):
     grids = _default_grids()
     rounds = _int_env("PERF_BENCH_ROUNDS", 30)
@@ -171,6 +227,9 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
                 "A_FAST": "1 curve = one scalar R (optimized R_vs_thickness) for one thickness",
                 "B_FAST": "1 curve = one full R(lambda) array (optimized) for one thickness",
                 "C_FAST": "1 curve = one full R(theta) array (optimized) for one thickness",
+                "A_PAR": "1 curve = one scalar R (multiprocessing over thickness)",
+                "B_PAR": "1 curve = one full R(lambda) array (multiprocessing over thickness)",
+                "C_PAR": "1 curve = one full R(theta) array (multiprocessing over thickness)",
             },
             "grid": {
                 "theta_start_deg": float(grids["theta_deg"][0]),
@@ -196,6 +255,7 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
             "checksum": float(checksum),
             "rounds": rounds,
             "warmup_rounds": warmup_rounds,
+            "parallel_workers": _int_env("PERF_PAR_WORKERS", 2),
         }
     )
 
@@ -284,6 +344,48 @@ def test_perf_scenario_c_fast(benchmark):
     _run_benchmark(benchmark, "C_FAST", _scenario_c_fast)
 
 
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
+def test_perf_scenario_a_par(benchmark):
+    """Benchmark scenario A_PAR: scalar R with multiprocessing over thickness."""
+    _run_benchmark(benchmark, "A_PAR", _scenario_a_par)
+
+
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
+def test_perf_scenario_b_par(benchmark):
+    """Benchmark scenario B_PAR: R(lambda) with multiprocessing over thickness."""
+    _run_benchmark(benchmark, "B_PAR", _scenario_b_par)
+
+
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
+def test_perf_scenario_c_par(benchmark):
+    """Benchmark scenario C_PAR: R(theta) with multiprocessing over thickness."""
+    _run_benchmark(benchmark, "C_PAR", _scenario_c_par)
+
+
 def test_perf_curve_spec_is_serializable():
     """Guardrail: benchmark metadata must be JSON serializable for CI artifact export."""
     payload = {
@@ -294,6 +396,9 @@ def test_perf_curve_spec_is_serializable():
             "A_FAST": "one scalar (optimized)",
             "B_FAST": "one lambda-array (optimized)",
             "C_FAST": "one theta-array (optimized)",
+            "A_PAR": "one scalar (multiprocessing)",
+            "B_PAR": "one lambda-array (multiprocessing)",
+            "C_PAR": "one theta-array (multiprocessing)",
         }
     }
     json.dumps(payload)
