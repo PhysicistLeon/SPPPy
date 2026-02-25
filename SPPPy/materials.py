@@ -47,15 +47,42 @@ def hide_drop_layers():
 
 
 M_cache = {}
+_M_CACHE_MAXSIZE = 200_000
+
+
+def clear_m_cache():
+    """Clear global transfer-matrix cache used by ``M_matrix``."""
+    M_cache.clear()
+
+
+def set_m_cache_limit(maxsize: int):
+    """Set max number of entries for global ``M_matrix`` cache."""
+    global _M_CACHE_MAXSIZE
+    if maxsize <= 0:
+        raise ValueError("maxsize must be > 0")
+    _M_CACHE_MAXSIZE = int(maxsize)
+
+
+def get_m_cache_limit() -> int:
+    """Return max size of global ``M_matrix`` cache."""
+    return _M_CACHE_MAXSIZE
+
+
+def get_m_cache_size() -> int:
+    """Return current size of global ``M_matrix`` cache."""
+    return len(M_cache)
 
 
 def memoize_M(f):
     def decorate(*args):
         if args in M_cache:
             return M_cache[args]
-        else:
-            M_cache[args] = f(*args)
-            return M_cache[args]
+
+        if len(M_cache) >= _M_CACHE_MAXSIZE:
+            clear_m_cache()
+
+        M_cache[args] = f(*args)
+        return M_cache[args]
 
     return decorate
 
