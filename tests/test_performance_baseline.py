@@ -78,6 +78,19 @@ def _scenario_a(grids: dict) -> tuple[int, float]:
     return len(grids["thickness_nm"]), checksum
 
 
+
+
+def _scenario_a_fast(grids: dict) -> tuple[int, float]:
+    """Fast variant of scenario A using optimized thickness sweep API."""
+    exp, _ = _build_experiment()
+    theta = float(grids["theta_deg"][0])
+    wl = float(grids["lambda_nm"][0]) * nm
+    thicknesses = grids["thickness_nm"] * nm
+
+    values = exp.R_vs_thickness(2, thicknesses, theta=theta, wl=wl, is_complex=False)
+    checksum = float(np.sum(values))
+    return len(grids["thickness_nm"]), checksum
+
 def _scenario_b(grids: dict) -> tuple[int, float]:
     exp, sio2_layer = _build_experiment()
     theta = float(grids["theta_deg"][0])
@@ -133,6 +146,7 @@ def _run_benchmark(benchmark, scenario_name: str, runner):
                 "A": "1 curve = one scalar R at fixed (theta, lambda) for one thickness",
                 "B": "1 curve = one full R(lambda) array for one thickness",
                 "C": "1 curve = one full R(theta) array for one thickness",
+                "A_FAST": "1 curve = one scalar R (optimized R_vs_thickness) for one thickness",
             },
             "grid": {
                 "theta_start_deg": float(grids["theta_deg"][0]),
@@ -185,6 +199,20 @@ def test_perf_scenario_a(benchmark):
     not _HAS_PYTEST_BENCHMARK,
     reason="pytest-benchmark is not installed",
 )
+def test_perf_scenario_a_fast(benchmark):
+    """Benchmark scenario A_FAST: scalar R via optimized thickness sweep API."""
+    _run_benchmark(benchmark, "A_FAST", _scenario_a_fast)
+
+
+@pytest.mark.performance
+@pytest.mark.skipif(
+    os.getenv("RUN_PERF_BASELINE", "0") != "1",
+    reason="Performance baseline is opt-in. Set RUN_PERF_BASELINE=1.",
+)
+@pytest.mark.skipif(
+    not _HAS_PYTEST_BENCHMARK,
+    reason="pytest-benchmark is not installed",
+)
 def test_perf_scenario_b(benchmark):
     """Benchmark scenario B: full R(lambda) sweep per thickness."""
     _run_benchmark(benchmark, "B", _scenario_b)
@@ -211,6 +239,7 @@ def test_perf_curve_spec_is_serializable():
             "A": "one scalar",
             "B": "one lambda-array",
             "C": "one theta-array",
+            "A_FAST": "one scalar (optimized)",
         }
     }
     json.dumps(payload)
